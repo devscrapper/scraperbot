@@ -10,7 +10,7 @@ require  File.dirname(__FILE__) + '/model/website.rb'
 module ScraperbotServer
 
   def initialize()
-    #p "initialize"
+
   end
 
   def post_init
@@ -21,6 +21,7 @@ module ScraperbotServer
    data =  JSON.parse param
     case data["cmd"]
       when "page"
+        p "Scrapping Website #{data["url"]}"
         w = Website.new(data["url"])
         w.scrape() if data["count_page"].nil?
         w.scrape(data["count_page"]) unless data["count_page"].nil?
@@ -30,8 +31,6 @@ module ScraperbotServer
       else
 
     end
-
-
   end
 
   def unbind
@@ -39,7 +38,7 @@ module ScraperbotServer
   end
 end
 
-# Note that this will block current thread.
+
 EventMachine.run {
   Signal.trap("INT") { EventMachine.stop }
   Signal.trap("TERM") { EventMachine.stop }
