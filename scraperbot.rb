@@ -20,7 +20,7 @@ module ScraperbotServer
   def receive_data param
    data =  JSON.parse param
     case data["cmd"]
-      when "page"
+      when "website"
         p "Scrapping Website #{data["url"]}"
         w = Website.new(data["url"])
         w.scrape() if data["count_page"].nil?
