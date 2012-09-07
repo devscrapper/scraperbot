@@ -103,6 +103,7 @@ class Website
     @f.close
     @ferror.close
     # informer application rails quelle peut uploader les fichiers
+    # EM.stop pour le bench
   end
 
   def scrape(count_page = 0)
