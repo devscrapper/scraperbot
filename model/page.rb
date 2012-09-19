@@ -18,14 +18,14 @@ class Page
        :id, # id logique d'une page
        :document # le contenu de la page
   # attribut en output
-  attr :title, # titre recuperé de la page html
+  attr :title, # titre recuperï¿½ de la page html
        :body_not_html, # body non html de la page
        :body_html # body html de la page
-  attr_reader :links # liens conservés de la page
+  attr_reader :links # liens conservï¿½s de la page
   # attribut private
-  attr :parsed_document, # le document parsé avec nokogiri
-       :root_url, # url root du site d'où provient la page
-       :schemes # ensemble de schemes recherchés dans une page
+  attr :parsed_document, # le document parsï¿½ avec nokogiri
+       :root_url, # url root du site d'oï¿½ provient la page
+       :schemes # ensemble de schemes recherchï¿½s dans une page
 
 
   def initialize(id, url, document)
@@ -40,22 +40,21 @@ class Page
   end
 
   def to_json(*a)
-    begin
-      count_word = @body_not_html.scan(Regexp.new(/[[:word:]]+/)).size
-    rescue Exception => e
-      # mesure dégradée, tant pis ....
-      count_word = @body_not_html.size
-    end
     @links = [] if @links.nil?
     {
         'id' => @id,
         'url' => @url,
         'title' => @title,
         'links' => @links,
-        'count_word' => count_word
+        'count_word' => count_word()
     }.to_json(*a)
   end
 
+  def to_s(*a)
+    @links = [] if @links.nil?
+    "#{@id};#{@url};#{@title};#{@links};#{count_word()}"
+
+  end
 
   def title
     begin
@@ -69,10 +68,10 @@ class Page
 # links (root_url, schemes, type)
 # ---------------------------------------------------------------------------------------------------------------------
 # INPUTS
-#   root_url : url de départ
-#   schemes : Array de scheme des links à sélectionner
+#   root_url : url de dï¿½part
+#   schemes : Array de scheme des links ï¿½ sï¿½lectionner
 #       :http, :https, :file, :mailto, ...
-#   type : Array des type de liens à sélectionner
+#   type : Array des type de liens ï¿½ sï¿½lectionner
 #       :local : liens du document dont leur host est celui du document
 #       :global : liens du document dont leur host est un sous-domaine du host du document
 #       :full : liens du documents qq soit leur host qui ne sont pas LOCAL, ni GLOBAL
@@ -86,13 +85,12 @@ class Page
     uri = URI.parse(root_url)
     raise PageError, "scheme (#{uri.scheme}) is not acceptable scheme [:http, :https] : #{uri}" unless [:http, :https].include?(uri.scheme.to_sym)
     @root_url = "#{uri.scheme}://#{uri.host}:#{uri.port}/#{uri.path}/"
-
     @links = parsed_links.map { |l|
       begin
         abs_l = absolutify_url(unrelativize_url(l))
-      # on ne conserve que les link qui répondent à la sélection sur le
-      abs_l if acceptable_scheme?(abs_l) and # scheme
-          acceptable_link?(type, abs_l, @root_url) # le perimètre : domaine, sous-domaine, hors du domaine
+        # on ne conserve que les link qui rï¿½pondent ï¿½ la sï¿½lection sur le
+        abs_l if acceptable_scheme?(abs_l) and # scheme
+            acceptable_link?(type, abs_l, @root_url) # le perimï¿½tre : domaine, sous-domaine, hors du domaine
       rescue Exception => e
       end
     }.compact
@@ -104,7 +102,7 @@ class Page
 
   # ces deux fonctions doivent rester en public sinon cela bug
   def acceptable_scheme?(l)
-    @schemes.include?(URI.parse(l).scheme.to_sym)
+    @schemes.include?(URI.parse(l).scheme.to_sym)  or  @schemes.include?(URI.parse(l).scheme)
   end
 
   def acceptable_link?(type, l, r)
@@ -118,20 +116,20 @@ class Page
       if l.subdomain == r.subdomain and
           l.domain == r.domain and
           l.public_suffix == r.public_suffix
-        type.include?(:local)
+        type.include?(:local) or type.include?("local")
       else
         if l.domain == r.domain and
             l.public_suffix == r.public_suffix
-          type.include?(:global)
+          type.include?(:global) or type.include?("global")
         else
-          type.include?(:full)
+          type.include?(:full)  or type.include?("full")
         end
       end
     else
       if  r_host == URI.parse(l).host
-        type.include?(:local)
+        type.include?(:local) or type.include?("local")
       else
-        type.include?(:full)
+        type.include?(:full)or type.include?("full")
       end
     end
   end
@@ -187,6 +185,15 @@ class Page
   # Convert a protocol-relative url to its full form, depending on the scheme of the page that contains it
   def unrelativize_url(url)
     url =~ /^\/\// ? "#{scheme}://#{url[2..-1]}" : url
+  end
+
+  def count_word()
+    begin
+      @body_not_html.scan(Regexp.new(/[[:word:]]+/)).size
+    rescue Exception => e
+      # mesure dï¿½gradï¿½e, tant pis ....
+      @body_not_html.size
+    end
   end
 end
 # End Class Page ------------------------------------------------------------------------------------------------
