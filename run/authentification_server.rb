@@ -13,10 +13,10 @@ module AuthentificationServer
   end
 
   def post_init
-    puts "someone connected"
   end
 
   def receive_data param
+    port, ip = Socket.unpack_sockaddr_in(get_peername)
     data = JSON.parse param
     Logging.send($log_file, Logger::WARN, "data receive : #{data}")
     case data["cmd"]
@@ -27,6 +27,7 @@ module AuthentificationServer
         new_token(user, pwd)
         send_data (JSON.generate(reponse))
         Logging.send($log_file, Logger::INFO, "action : #{data["cmd"]}, response : #{reponse}")
+        p "push new authentification to #{ip}:#{port}"
         close_connection_after_writing
       when "check"
         user = data["user"]
@@ -35,29 +36,32 @@ module AuthentificationServer
         send_data (JSON.generate(response))
         Logging.send($log_file, Logger::INFO, "action : #{data["cmd"]}, response : #{response}")
         close_connection_after_writing
+        p "check authentification for #{ip}:#{port}"
       when "delete"
         user = data["user"]
         pwd = data["pwd"]
         delete_token(user, pwd)
         Logging.send($log_file, Logger::INFO, "action : #{data["cmd"]}")
         close_connection
+        p "delete authentification for #{ip}:#{port}"
       when "delete_all"
         delete_all()
         Logging.send($log_file, Logger::INFO, "action : #{data["cmd"]}")
         close_connection
+        p "delete all authentifications"
       when "list"
         send_data ($tokens)
         close_connection_after_writing
+        p "push all tokens to #{ip}:#{port}"
       when "exit"
         close_connection
         EventMachine.stop
       else
-        Logging.send($log_file, Logger::ERROR, "unknown action : #{data["cmd"]}")
+        Logging.send($log_file, Logger::ERROR, "unknown action : #{data["cmd"]} from  #{ip}:#{port}")
     end
   end
 
   def unbind
-    puts "someone"
   end
 
   def new_pwd()
