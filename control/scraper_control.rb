@@ -4,4 +4,4 @@ require 'rubygems' # if you use RubyGems   
 require 'daemons'
 
 
-Daemons.run('scraperbot.rb')
+Daemons.run('scraper_server.rb')
