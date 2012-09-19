@@ -18,7 +18,8 @@ module AuthentificationServer
   def receive_data param
     port, ip = Socket.unpack_sockaddr_in(get_peername)
     data = JSON.parse param
-    Logging.send($log_file, Logger::WARN, "data receive : #{data}")
+    who = data["who"]
+    Logging.send($log_file, Logger::DEBUG, "data receive : #{data}")
     case data["cmd"]
       when "get"
         pwd = new_pwd
@@ -26,33 +27,34 @@ module AuthentificationServer
         reponse = {"user" => user, "pwd" => pwd}
         new_token(user, pwd)
         send_data (JSON.generate(reponse))
-        Logging.send($log_file, Logger::INFO, "action : #{data["cmd"]}, response : #{reponse}")
-        p "push new authentification to #{ip}:#{port}"
+        Logging.send($log_file, Logger::INFO, "push new authentification to #{who}(#{ip}:#{port})")
+        p "push new authentification to #{who}(#{ip}:#{port})"
         close_connection_after_writing
       when "check"
         user = data["user"]
         pwd = data["pwd"]
         response = {"check" => check_token(user, pwd)}
         send_data (JSON.generate(response))
-        Logging.send($log_file, Logger::INFO, "action : #{data["cmd"]}, response : #{response}")
+        Logging.send($log_file, Logger::INFO, "check authentification for #{who}(#{ip}:#{port})")
         close_connection_after_writing
-        p "check authentification for #{ip}:#{port}"
+        p "check authentification for #{who}(#{ip}:#{port})"
       when "delete"
         user = data["user"]
         pwd = data["pwd"]
         delete_token(user, pwd)
-        Logging.send($log_file, Logger::INFO, "action : #{data["cmd"]}")
+        Logging.send($log_file, Logger::INFO, "delete authentification for #{who}(#{ip}:#{port})")
         close_connection
-        p "delete authentification for #{ip}:#{port}"
+        p "delete authentification for #{who}(#{ip}:#{port})"
       when "delete_all"
         delete_all()
-        Logging.send($log_file, Logger::INFO, "action : #{data["cmd"]}")
+        Logging.send($log_file, Logger::INFO, "delete all authentifications for #{who}(#{ip}:#{port})")
         close_connection
-        p "delete all authentifications"
+        p "delete all authentifications for #{who}(#{ip}:#{port})"
       when "list"
         send_data ($tokens)
         close_connection_after_writing
         p "push all tokens to #{ip}:#{port}"
+        Logging.send($log_file, Logger::INFO, "push all tokens to #{ip}:#{port}")
       when "exit"
         close_connection
         EventMachine.stop
@@ -126,15 +128,14 @@ accepted_ip = "localhost" #le serveur est installé sur la même machine que ftp
 # INPUT
 #--------------------------------------------------------------------------------------------------------------------
 ARGV.each{|arg|
-  listening_port = arg.split("=")[1] unless arg.split("=")[0].nil?
+  listening_port = arg.split("=")[1] if arg.split("=")[0] == "--port"
+  accepted_ip = arg.split("=")[1] if arg.split("=")[0] == "--accepted_ip"
 } if ARGV.size > 0
+
 
 Logging.send($log_file, Logger::INFO, "parameters of authentification server : ")
 Logging.send($log_file, Logger::INFO, "accepted ip : #{accepted_ip}")
 Logging.send($log_file, Logger::INFO, "listening port : #{listening_port}")
-
-
-
 #--------------------------------------------------------------------------------------------------------------------
 # MAIN
 #--------------------------------------------------------------------------------------------------------------------
