@@ -17,6 +17,7 @@ module Logging
   def send(log_file, severity, message, line=nil, methode=nil, prog=nil)
     l = Logger.new(log_file, 'daily')
     case severity
+      when Logger::DEBUG
       when Logger::INFO
       when Logger::WARN
       when Logger::ERROR, Logger::FATAL

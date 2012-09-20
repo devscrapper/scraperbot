@@ -14,6 +14,9 @@ gem 'nokogiri'
 gem 'daemons'
 gem 'json'
 gem 'multi_json'
+#gem 'fastfilereaderext'
+gem 'em-ftpd'
+
 # fin new gem
 
 #group :development
@@ -23,6 +26,7 @@ if RUBY_VERSION =~ /1.9/
 else
     gem 'ruby-debug'
 end
+  gem 'method_profiler'
 end
 
 group :production      do
