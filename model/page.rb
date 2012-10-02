@@ -53,7 +53,6 @@ class Page
   def to_s(*a)
     @links = [] if @links.nil?
     "#{@id};#{@url};#{@title};#{@links};#{count_word()}"
-
   end
 
   def title

@@ -33,25 +33,33 @@ module ScraperbotServer
     port, ip = Socket.unpack_sockaddr_in(get_peername)
     case data["cmd"]
       when "send_me_all_files"
-        Website.new(self, data["label"]).send_all_files()
-        Traffic_source.new(self, data["label"]).send_all_files()
+        Website.new(self).send_all_files()
         p "Send all Website files to #{who}(#{ip}:#{port})"
+
+        Traffic_source.new(self).send_all_files()
+        p "Send all Traffic_source files to #{who}(#{ip}:#{port})"
         Logging.send($log_file, Logger::INFO, "Send all Website files to #{who}(#{ip}:#{port})")
       when "website"
         options = Hash.new
         p "Scrapping Website #{data["label"]} for #{who}(#{ip}:#{port})"
         Logging.send($log_file, Logger::INFO, "Scrapping Website #{data["label"]} for #{who}(#{ip}:#{port})")
-        w = Website.new(self, data["label"], data["url"])
+
+        w = Website.new(self, data["label"], data["url"], data["profil_id_ga"])
+
         options["count_page"] = data["count_page"] unless data["count_page"].nil?
         options["schemes"] = data["schemes"] unless data["schemes"].nil?
         options["type"] = data["type"] unless data["type"].nil?
+        options["start_date"] = data["start_date"] unless data["start_date"].nil?
+        options["end_date"] = data["end_date"] unless data["end_date"].nil?
         w.scrape(options)
         close_connection
       when "traffic_source"
         options = Hash.new
         p "Scrapping Traffic_source #{data["label"]} for #{who}(#{ip}:#{port})"
         Logging.send($log_file, Logger::INFO, "Scrapping Traffic_source #{data["label"]} for #{who}(#{ip}:#{port})")
+
         w = Traffic_source.new(self, data["label"], data["profil_id_ga"])
+
         options["start_date"] = data["start_date"] unless data["start_date"].nil?
         options["end_date"] = data["end_date"] unless data["end_date"].nil?
         w.scrape(options)
@@ -61,6 +69,8 @@ module ScraperbotServer
       else
     end
   end
+
+
 
   def unbind
   end
