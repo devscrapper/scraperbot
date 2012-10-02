@@ -37,10 +37,12 @@ class Website
        :connection #la connection creee par le serveur
 
 
-  def initialize(connection, url = nil)
+
+  def initialize(connection, label, url = nil)
     # url = nil si et seulement si on renvoit tous les fichiers de l'OUTPUT préfixé par le nom de la classe
     @connection = connection
     @host = url
+    @label = label
     @known_url = Hash.new(0)
   end
 
@@ -131,11 +133,12 @@ class Website
 
     begin
       response = get_authentification
-      data = {"who" => self.class.name, "cmd" => "file", "label" => "label", "date_scraping" => @today, "id_file" => id_file, "user" => response["user"], "pwd" => response["pwd"]}
-      Logging.send(@@log_file, Logger::DEBUG, "push file #{data}")
       s = TCPSocket.new @connection.load_server_ip, @connection.load_server_port
-      s.puts JSON.generate(data)
       port, ip = Socket.unpack_sockaddr_in(s.getsockname)
+      data = {"who" => self.class.name, "where" => ip, "cmd" => "file", "label" => "label", "date_scraping" => @today, "id_file" => id_file, "user" => response["user"], "pwd" => response["pwd"]}
+      Logging.send(@@log_file, Logger::DEBUG, "push file #{data}")
+      s.puts JSON.generate(data)
+
       Logging.send(@@log_file, Logger::INFO, "push file #{id_file} from #{ip}:#{port} to #{@connection.load_server_ip}:#{@connection.load_server_port}")
 
       s.close
