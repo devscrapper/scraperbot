@@ -52,6 +52,7 @@ module ScraperbotServer
         options["start_date"] = data["start_date"] unless data["start_date"].nil?
         options["end_date"] = data["end_date"] unless data["end_date"].nil?
         w.scrape(options)
+
         close_connection
       when "traffic_source"
         options = Hash.new
@@ -63,6 +64,7 @@ module ScraperbotServer
         options["start_date"] = data["start_date"] unless data["start_date"].nil?
         options["end_date"] = data["end_date"] unless data["end_date"].nil?
         w.scrape(options)
+
         close_connection
       when "exit"
         EventMachine.stop

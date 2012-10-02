@@ -35,7 +35,7 @@ class Website < Scraping
        :start_spawn,
        :stop_spawn,
        :push_file_spawn,
-       :avgTimeOnPage, # temps passé sur les pages
+       :avg_time_on_page, # temps passé sur les pages
        :profil_id_ga
 
 
@@ -68,8 +68,13 @@ class Website < Scraping
     new_volume_output_file
 
     #scraping avgtime par page
-    avgTimeOnPage
+    avg_time_on_page
 
+    #scraping website
+    Logging.send(@log_file, Logger::DEBUG, "scrapping website options : ")
+    Logging.send(@log_file, Logger::DEBUG, "count_page : #{@count_page}")
+    Logging.send(@log_file, Logger::DEBUG, "schemes : #{@schemes}")
+    Logging.send(@log_file, Logger::DEBUG, "type : #{@type}")
     @run_spawn.notify urls
     Logging.send(@log_file, Logger::INFO, "scrapping of #{@label} is running ")
   end
@@ -143,10 +148,13 @@ class Website < Scraping
     @schemes = [:http] if  options["schemes"].nil?
     @type = options["type"] unless options["type"].nil?
     @type = [:local, :global] if  options["type"].nil?
-    Logging.send(@log_file, Logger::INFO, "scrapping options : ")
-    Logging.send(@log_file, Logger::INFO, "count_page : #{@count_page}")
-    Logging.send(@log_file, Logger::INFO, "schemes : #{@schemes}")
-    Logging.send(@log_file, Logger::INFO, "type : #{@type}")
+    # comportement par defaut du scraping :
+    # start_date = end_date sont le jour précédent
+    @start_date = Date.parse(options["start_date"]) unless options["start_date"].nil?
+    @start_date = Date.today.prev_day(1) if  options["start_date"].nil?
+    @end_date = Date.parse(options["end_date"]) unless options["end_date"].nil?
+    @end_date = Date.today.prev_day(1) if  options["end_date"].nil?
+
     w = self
     @start_spawn = EM.spawn {
       w.start()
@@ -164,14 +172,16 @@ class Website < Scraping
   end
 
   private
-  def avgTimeOnPage()
-    # il n'ya pas de plage temporelle pour rechercher les avgtimeonpage
-    @start_date = @end_date = ""
+  def avg_time_on_page()
+    Logging.send(@log_file, Logger::DEBUG, "scrapping avg_time_on_page options : ")
+    Logging.send(@log_file, Logger::DEBUG, "start_date : #{@start_date}")
+    Logging.send(@log_file, Logger::DEBUG, "end date : #{@end_date}")
+
     @dimensions = "ga:hostname,ga:pagePath"
     @metrics = "ga:avgTimeOnPage"
     @filters = "ga:avgTimeOnPage!=0"
-    @avgTimeOnPage = Hash.new
-    Logging.send(@log_file, Logger::INFO, "scrapping avgTimeOnPage of #{@label} is running ")
+    @avg_time_on_page = Hash.new
+    Logging.send(@log_file, Logger::INFO, "scrapping avg_time_on_page of #{@label} is running ")
     begin
       connect_to_ga(@profil_id_ga)
 
@@ -180,17 +190,17 @@ class Website < Scraping
         begin
           url = "#{page["hostname"]}#{page["pagePath"]}"
           URI.parse(url)
-          @avgTimeOnPage[url] = page["avgTimeOnPage"]
+          @avg_time_on_page[url] = page["avgTimeOnPage"]
         rescue Exception => e
         end
       }
-      Logging.send(@log_file, Logger::DEBUG, "fetch avgTimeOnPage for #{self.class.name}:#{@label} is ok")
+      Logging.send(@log_file, Logger::DEBUG, "fetch avg_time_on_page for #{self.class.name}:#{@label} is ok")
     rescue Exception => e
-      p "fetch avgTimeOnPage for #{self.class.name}:#{@label}, failed"
-      Logging.send(@log_file, Logger::ERROR, "fetch avgTimeOnPage for #{self.class.name}:#{@label} failed : #{e.message}")
+      p "fetch avg_time_on_page for #{self.class.name}:#{@label}, failed"
+      Logging.send(@log_file, Logger::ERROR, "fetch avg_time_on_page for #{self.class.name}:#{@label} failed : #{e.message}")
     end
-    Logging.send(@log_file, Logger::INFO, "scrapping avgTimeOnPage of #{@label} is terminated ")
-    @avgTimeOnPage
+    Logging.send(@log_file, Logger::INFO, "scrapping avg_time_on_page of #{@label} is terminated ")
+    @avg_time_on_page
   end
 
 
@@ -206,11 +216,13 @@ class Website < Scraping
 
   private
   def output(page)
-      # le temps passé sur la page a pu etre recuperer de google analytics
+
       uri = URI.parse(page.url)
       host_path = uri.host + uri.path
-      time_on_page = @avgTimeOnPage[host_path] unless @avgTimeOnPage[host_path].nil?
-      time_on_page =  "" if @avgTimeOnPage[host_path].nil?
+      # le temps passé sur la page a pu etre recuperer de google analytics
+      time_on_page = @avg_time_on_page[host_path] unless @avg_time_on_page[host_path].nil?
+      # le temps passé sur la page n'a pas pu etre recuperer de google analytics
+      time_on_page =  "" if @avg_time_on_page[host_path].nil?
       @f.write(page.to_s + ";#{time_on_page}")
 
       if  @f.size > @connection.output_file_size.to_i

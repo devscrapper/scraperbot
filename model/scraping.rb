@@ -1,4 +1,6 @@
 class Scraping
+
+
   attr :label,
        :connection, #la connection creee par le serveur
        :log_file
