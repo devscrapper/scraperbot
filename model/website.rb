@@ -17,7 +17,7 @@ require 'logger'
 class Website < Scraping
   include Exchange_file
   include Google_analytics
-
+  SEPARATOR="%SEP%"
   # Input
   attr :host # le hostname du site
   # Output
@@ -28,7 +28,7 @@ class Website < Scraping
        :nbpage, # nbr de page du site
        :idpage, # cl� d'identification d'une page
        :known_url, # contient les liens identifi�s
-       :count_page, # nombre de page que lon veut recuperer  ; 0 <=> toutes les pages
+       :count_page, # nombre de page que lon veut recuperer   0 <=> toutes les pages
        :schemes, #les schemes que l'on veut
        :type, # type de destination du lien : local au site, ou les sous-domaine, ou internet
        :run_spawn,
@@ -109,7 +109,6 @@ class Website < Scraping
 
       if urls.size > 0 and
           (@count_page > @nbpage or @count_page == 0)
-        @f.write(EOF_ROW)
         @run_spawn.notify urls
       else
         @stop_spawn.notify
@@ -173,6 +172,12 @@ class Website < Scraping
 
   private
   def avg_time_on_page()
+    begin
+      connect_to_ga(@profil_id_ga)
+    rescue Exception => e
+
+    end
+
     Logging.send(@log_file, Logger::DEBUG, "scrapping avg_time_on_page options : ")
     Logging.send(@log_file, Logger::DEBUG, "start_date : #{@start_date}")
     Logging.send(@log_file, Logger::DEBUG, "end date : #{@end_date}")
@@ -183,7 +188,7 @@ class Website < Scraping
     @avg_time_on_page = Hash.new
     Logging.send(@log_file, Logger::INFO, "scrapping avg_time_on_page of #{@label} is running ")
     begin
-      connect_to_ga(@profil_id_ga)
+
 
       execute().each { |page|
         #on ne conserve que les url classiques qui ne bugger pas
@@ -223,7 +228,7 @@ class Website < Scraping
       time_on_page = @avg_time_on_page[host_path] unless @avg_time_on_page[host_path].nil?
       # le temps passé sur la page n'a pas pu etre recuperer de google analytics
       time_on_page =  "" if @avg_time_on_page[host_path].nil?
-      @f.write(page.to_s + ";#{time_on_page}")
+      @f.write(page.to_s + "#{SEPARATOR}#{time_on_page}#{EOF_ROW}")
 
       if  @f.size > @connection.output_file_size.to_i
         # informer Load_server qu'il peut telecharger le fichier

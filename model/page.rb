@@ -12,6 +12,7 @@ require 'json/ext'
 class Page
   class PageError < StandardError
   end
+  SEPARATOR = "%SEP%"
   NO_LIMIT = 0
   # attribut en input
   attr :url, # url de la page
@@ -50,9 +51,17 @@ class Page
     }.to_json(*a)
   end
 
+
   def to_s(*a)
     @links = [] if @links.nil?
-    "#{@id};#{@url};#{@title};#{@links};#{count_word()}"
+
+    uri = URI(@url)
+    url = "/"
+    url = uri.path unless uri.path.nil?
+    url += "?#{uri.query}" unless uri.query.nil?
+    url += "##{uri.fragment}" unless uri.fragment.nil?
+
+    "#{@id}#{SEPARATOR}#{uri.host}#{SEPARATOR}#{url}#{SEPARATOR}#{@title}#{SEPARATOR}#{@links}#{SEPARATOR}#{count_word()}"
   end
 
   def title
