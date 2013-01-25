@@ -1,81 +1,56 @@
 require 'rubygems'
 require 'eventmachine'
-require 'em-http'
 require 'json'
 require 'json/ext'
-require 'date'
-require File.dirname(__FILE__) + '/../model/website.rb'
-require File.dirname(__FILE__) + '/../model/traffic_source.rb'
+require 'digest/sha2'
+require 'yaml'
 require File.dirname(__FILE__) + '/../lib/logging'
 require 'logger'
-
-module ScraperbotServer
-  attr :authentification_server_port,
-       :load_server_ip,
-       :load_server_port,
-       :output_file_size
+require 'net/ftp'
+require File.dirname(__FILE__) + '/../lib/scraping_google_analytics'
+require File.dirname(__FILE__) + '/../lib/common'
 
 
-  def initialize(authentification_server_port, load_server_ip, load_server_port, output_file_size)
-    @authentification_server_port = authentification_server_port
-    @load_server_ip = load_server_ip
-    @load_server_port = load_server_port
-    @output_file_size = output_file_size
-  end
-
-  def post_init
-  end
+module ScrapeServer
+  include Common
+  INPUT = File.dirname(__FILE__) + "/../input/"
+  TMP = File.dirname(__FILE__) + "/../tmp/"
 
 
   def receive_data param
-    data = JSON.parse param
-    who = data["who"]
-    port, ip = Socket.unpack_sockaddr_in(get_peername)
-    case data["cmd"]
-      when "send_me_all_files"
-        Website.new(self).send_all_files()
-        p "Send all Website files to #{who}(#{ip}:#{port})"
-
-        Traffic_source.new(self).send_all_files()
-        p "Send all Traffic_source files to #{who}(#{ip}:#{port})"
-        Logging.send($log_file, Logger::INFO, "Send all Website files to #{who}(#{ip}:#{port})")
-      when "website"
-        options = Hash.new
-        p "Scrapping Website #{data["label"]} for #{who}(#{ip}:#{port})"
-        Logging.send($log_file, Logger::INFO, "Scrapping Website #{data["label"]} for #{who}(#{ip}:#{port})")
-
-        w = Website.new(self, data["label"], data["url"], data["profil_id_ga"])
-
-        options["count_page"] = data["count_page"] unless data["count_page"].nil?
-        options["schemes"] = data["schemes"] unless data["schemes"].nil?
-        options["type"] = data["type"] unless data["type"].nil?
-        options["start_date"] = data["start_date"] unless data["start_date"].nil?
-        options["end_date"] = data["end_date"] unless data["end_date"].nil?
-        w.scrape(options)
-
-        close_connection
-      when "traffic_source"
-        options = Hash.new
-        p "Scrapping Traffic_source #{data["label"]} for #{who}(#{ip}:#{port})"
-        Logging.send($log_file, Logger::INFO, "Scrapping Traffic_source #{data["label"]} for #{who}(#{ip}:#{port})")
-
-        w = Traffic_source.new(self, data["label"], data["profil_id_ga"])
-
-        options["start_date"] = data["start_date"] unless data["start_date"].nil?
-        options["end_date"] = data["end_date"] unless data["end_date"].nil?
-        w.scrape(options)
-
-        close_connection
-      when "exit"
-        EventMachine.stop
-      else
+    debug ("data receive : #{param}")
+    close_connection
+    begin
+      #TODO on reste en thread tant que pas effet de bord et pas d'explosion du nombre de thread car plus rapide
+      Thread.new { execute_task(YAML::load(param)) }
+    rescue Exception => e
+      warning("data receive #{param} : #{e.message}")
     end
   end
 
-
-
-  def unbind
+  def execute_task(data)
+    task = data["cmd"]
+    case task
+      when "Scraping_behaviour"
+        label = data["label"]
+        date_building = data["date_building"]
+        profil_id_ga = data["data"]["profil_id_ga"]
+        Scraping_google_analytics.Scraping_behaviour(label, date_building, profil_id_ga)
+        information("scraping behaviour")
+      when "Scraping_hourly_daily_distribution"
+        label = data["label"]
+        date_building = data["date_building"]
+        profil_id_ga = data["data"]["profil_id_ga"]
+        Scraping_google_analytics.Scraping_hourly_daily_distribution(label, date_building, profil_id_ga)
+        Information("scraping hourly daily distribution")
+      when "exit"
+        EventMachine.stop
+      else
+        port, ip = Socket.unpack_sockaddr_in(get_peername)
+        alert("unknown action : #{data["cmd"]} from  #{ip}:#{port}")
+    end
   end
+
 end
 
 
@@ -83,63 +58,68 @@ end
 # INIT
 #--------------------------------------------------------------------------------------------------------------------
 $log_file = File.dirname(__FILE__) + "/../log/" + File.basename(__FILE__, ".rb") + ".log"
-# ftp_server et scraper server sont sur la même machine en raison du repertoire de partagé des fichiers
-# scraper_server le rempli, et ftp_server le publie et le vide.
-listening_port = 9003 # port d'ecoute du load_server
-objects="website,traffic_source" # liste des objets que gere le scraper_server
-authentification_server_port = 9001
-calendar_server_port=9005
-calendar_server_ip="localhost"
-load_server_ip = "localhost"
-load_server_port = 9002
-output_file_size = 1000000
+PARAMETERS = File.dirname(__FILE__) + "/../parameter/" + File.basename(__FILE__, ".rb") + ".yml"
 
+
+$listening_port = 9151 # port d'ecoute du scrape_server
+$authentification_server_port = 9153
+$calendar_server_port=9154
+$ftp_server_port = 9152
+$input_flows_server_ip = "localhost"
+$input_flows_server_port = 9101
+$output_file_size = 1000000
+$statupweb_server_ip = "localhost"
+$statupweb_server_port = 3000
+$envir = "production"
 
 #--------------------------------------------------------------------------------------------------------------------
 # INPUT
 #--------------------------------------------------------------------------------------------------------------------
 ARGV.each { |arg|
-  listening_port = arg.split("=")[1] if arg.split("=")[0] == "--port"
-  objects = arg.split("=")[1] if arg.split("=")[0] == "--objects"
-  authentification_server_port = arg.split("=")[1] if arg.split("=")[0] == "--authentification_server_port"
-  calendar_server_port = arg.split("=")[1] if arg.split("=")[0] == "--calendar_server_port"
-  calendar_server_ip = arg.split("=")[1] if arg.split("=")[0] == "--calendar_server_ip"
-  load_server_ip = arg.split("=")[1] if arg.split("=")[0] == "--load_server_ip"
-  load_server_port = arg.split("=")[1] if arg.split("=")[0] == "--load_server_port"
-  output_file_size = arg.split("=")[1] if arg.split("=")[0] == "--output_file_size"
+  $envir = arg.split("=")[1] if arg.split("=")[0] == "--envir"
 } if ARGV.size > 0
 
+begin
+  params = YAML::load(File.open(PARAMETERS), "r:UTF-8")
+  $listening_port = params[$envir]["listening_port"] unless params[$envir]["listening_port"].nil?
+  $calendar_server_port = params[$envir]["calendar_server_port"] unless params[$envir]["calendar_server_port"].nil?
+  $authentification_server_port = params[$envir]["authentification_server_port"] unless params[$envir]["authentification_server_port"].nil?
+  $input_flows_server_ip = params[$envir]["input_flows_server_ip"] unless params[$envir]["input_flows_server_ip"].nil?
+  $input_flows_server_port = params[$envir]["input_flows_server_port"] unless params[$envir]["input_flows_server_port"].nil?
+  $statupweb_server_ip = params[$envir]["statupweb_server_ip"] unless params[$envir]["statupweb_server_ip"].nil?
+  $statupweb_server_port = params[$envir]["statupweb_server_port"] unless params[$envir]["statupweb_server_port"].nil?
+  $output_file_size = params[$envir]["output_file_size"] unless params[$envir]["output_file_size"].nil?
+  $ftp_server_port = params[$envir]["ftp_server_port"] unless params[$envir]["ftp_server_port"].nil?
+rescue Exception => e
+  p e.message
+  Logging.send($log_file, Logger::INFO, "parameters file #{PARAMETERS} is not found")
+end
 
-Logging.send($log_file, Logger::INFO, "parameters of load server : ")
-Logging.send($log_file, Logger::INFO, "listening port : #{listening_port}")
-Logging.send($log_file, Logger::INFO, "objects : #{objects}")
-Logging.send($log_file, Logger::INFO, "authentification server port : #{authentification_server_port}")
-Logging.send($log_file, Logger::INFO, "calendar server port : #{calendar_server_port}")
-Logging.send($log_file, Logger::INFO, "calendar server ip : #{calendar_server_ip}")
-Logging.send($log_file, Logger::INFO, "load server ip : #{load_server_ip}")
-Logging.send($log_file, Logger::INFO, "load server port : #{load_server_port}")
-Logging.send($log_file, Logger::INFO, "output file size : #{output_file_size}")
+Common.information("parameters of scrape server : ")
+Common.information( "listening port : #{$listening_port}")
+Common.information("calendar server port : #{$calendar_server_port}")
+Common.information( "authentification server port : #{$authentification_server_port}")
+Common.information( "ftp_server_port : #{$ftp_server_port}")
+Common.information( "input_flows server ip : #{$input_flows_server_ip}")
+Common.information( "input_flows server port : #{$input_flows_server_port}")
+Common.information( "statupweb server ip : #{$statupweb_server_ip}")
+Common.information("statupweb server port : #{$statupweb_server_port}")
+Common.information( "output file size : #{$output_file_size}")
 
 
 #--------------------------------------------------------------------------------------------------------------------
 # MAIN
 #--------------------------------------------------------------------------------------------------------------------
-# informe le calendar_server des objets que le scraper_server geres
-begin
-  s = TCPSocket.new calendar_server_ip, calendar_server_port
-  s.puts JSON.generate({"what" => "calendar", "cmd" => "management", "objects" => objects, "port" => listening_port})
-  s.close
-  Logging.send($log_file, Logger::INFO, "push to calendar_server (#{calendar_server_ip}:#{calendar_server_port}), objects (#{objects}) manage  by scraper_server (#{listening_port})")
-  p "push to calendar_server (#{calendar_server_ip}:#{calendar_server_port}), objects (#{objects}) manage  by scraper_server"
-rescue Exception => e
-  Logging.send($log_file, Logger::WARN, "connexion to calendar_server (#{calendar_server_ip}:#{calendar_server_port}) failed : #{e.message}")
-  p "connexion to calendar_server (#{calendar_server_ip}:#{calendar_server_port}) failed => cannot be managed by calendar_server"
-end
-
+Common.information("environement : #{$envir}")
 # démarrage du server
 EventMachine.run {
   Signal.trap("INT") { EventMachine.stop }
   Signal.trap("TERM") { EventMachine.stop }
-  EventMachine.start_server "0.0.0.0", listening_port, ScraperbotServer, authentification_server_port, load_server_ip, load_server_port, output_file_size
+  Common.information ( "scrape server is starting")
+  EventMachine.start_server "localhost", $listening_port, ScrapeServer
 }
+Common.information ( "scrape server stopped")
 
+#--------------------------------------------------------------------------------------------------------------------
+# END
+#--------------------------------------------------------------------------------------------------------------------
