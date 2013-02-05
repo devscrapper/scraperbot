@@ -58,8 +58,10 @@ end
 
 
 class Policy
-  BUILDING_OBJECTIVES_DAY = -1 * IceCube::ONE_DAY #on decale d'un  jour j-1
-  BUILDING_OBJECTIVES_HOUR = 2 * IceCube::ONE_HOUR #heure de démarrage est 2h du matin
+  HOURLY_DAILY_DISTRIBUTION_DAY = -1 * IceCube::ONE_DAY #on decale d'un  jour j-1
+  HOURLY_DAILY_DISTRIBUTION_HOUR = 0 * IceCube::ONE_HOUR #heure de démarrage est minuit
+  BEHAVIOUR_DAY = -1 * IceCube::ONE_DAY #on decale d'un  jour j-1
+  BEHAVIOUR_HOUR = 1 * IceCube::ONE_HOUR #heure de démarrage est minuit
   attr :label,
        :profil_id_ga,
        :policy_id,
@@ -80,33 +82,120 @@ class Policy
     business = {
         "profil_id_ga" => @profil_id_ga
     }
-    p "business #{business}"
     #Si demande suppression de la policy alors absence de periodicity et de business
     if @periodicity.nil?
-      scraping_hourly_daily_distribution = Event.new(key,
-                                                     "Scraping_hourly_daily_distribution")
-      scraping_behaviour = Event.new(key,
-                                     "Scraping_behaviour")
-      [scraping_hourly_daily_distribution, scraping_behaviour]
+      [Event.new(key,
+                 "Scraping_hourly_daily_distribution"),
+       Event.new(key,
+                 "Scraping_behaviour")]
     else
-      #TODO : creer un class Building_objective qui herite de event
-      periodicity = IceCube::Schedule.from_yaml(@periodicity)
-      periodicity.start_time += BUILDING_OBJECTIVES_DAY + BUILDING_OBJECTIVES_HOUR
-      periodicity.end_time += BUILDING_OBJECTIVES_DAY
-      periodicity.remove_recurrence_rule IceCube::Rule.weekly.day(:sunday)
-      periodicity.add_recurrence_rule IceCube::Rule.weekly.until(periodicity.end_time)
-      scraping_hourly_daily_distribution = Event.new(key,
-                                                     "Scraping_hourly_daily_distribution",
-                                                     periodicity.to_yaml,
-                                                     business)
-      scraping_behaviour = Event.new(key,
-                                     "Scraping_behaviour",
-                                     periodicity.to_yaml,
-                                     business)
-      [scraping_hourly_daily_distribution, scraping_behaviour]
+      periodicity_hourly_daily_distribution = IceCube::Schedule.from_yaml(@periodicity)
+      periodicity_hourly_daily_distribution.start_time += HOURLY_DAILY_DISTRIBUTION_DAY + HOURLY_DAILY_DISTRIBUTION_HOUR
+      periodicity_hourly_daily_distribution.end_time += HOURLY_DAILY_DISTRIBUTION_DAY
+      periodicity_hourly_daily_distribution.remove_recurrence_rule IceCube::Rule.weekly.day(:sunday)
+      periodicity_hourly_daily_distribution.add_recurrence_rule IceCube::Rule.weekly.until(periodicity_hourly_daily_distribution.end_time)
+
+      periodicity_behaviour = IceCube::Schedule.from_yaml(@periodicity)
+      periodicity_behaviour.start_time += BEHAVIOUR_DAY + BEHAVIOUR_HOUR
+      periodicity_behaviour.end_time += BEHAVIOUR_DAY
+      periodicity_behaviour.remove_recurrence_rule IceCube::Rule.weekly.day(:sunday)
+      periodicity_behaviour.add_recurrence_rule IceCube::Rule.weekly.until(periodicity_behaviour.end_time)
+
+      [Event.new(key,
+                 "Scraping_hourly_daily_distribution",
+                 periodicity_hourly_daily_distribution.to_yaml,
+                 business),
+       Event.new(key,
+                 "Scraping_behaviour",
+                 periodicity_behaviour.to_yaml,
+                 business)]
     end
-
-
   end
 end
 
+
+class Website
+  DEVICE_PLATFORM_PLUGIN_DAY = -1 * IceCube::ONE_DAY #on decale d'un  jour j-1
+  DEVICE_PLATFORM_PLUGIN_HOUR = 0 * IceCube::ONE_HOUR #heure de démarrage est minuit
+  DEVICE_PLATFORM_RESOLUTION_DAY = -1 * IceCube::ONE_DAY #on decale d'un  jour j-1
+  DEVICE_PLATFORM_RESOLUTION_HOUR = 1 * IceCube::ONE_HOUR #heure de démarrage est 1h du matin
+  TRAFFIC_SOURCE_LANDING_PAGE_DAY = -1 * IceCube::ONE_DAY #on decale d'un  jour j-1
+  TRAFFIC_SOURCE_LANDING_PAGE_HOUR = 2 * IceCube::ONE_HOUR #heure de démarrage est 2h du matin
+  attr :label,
+       :profil_id_ga,
+       :website_id,
+       :periodicity,
+       :url_root,
+       :count_page,
+       :schemes,
+       :types
+
+  def initialize(data)
+    @label = data["label"]
+    @profil_id_ga = data["profil_id_ga"]
+    @website_id = data["website_id"]
+    @periodicity = data["periodicity"]
+    @url_root = data["url_root"]
+    @count_page = data["count_page"]
+    @schemes = data["schemes"]
+    @types = data["types"]
+  end
+
+  def to_event()
+
+    key = {"website_id" => @website_id,
+           "label" => @label
+    }
+    business = {
+        "profil_id_ga" => @profil_id_ga,
+        "url_root" => @url_root,
+        "count_page" => @count_page,
+        "schemes" => @schemes,
+        "types" => @types
+    }
+    #Si demande suppression de la website alors absence de periodicity et de business
+    if @periodicity.nil?
+      [Event.new(key,
+                 "Scraping_device_platform_plugin"),
+       Event.new(key,
+                 "Scraping_device_platform_resolution"),
+       Event.new(key,
+                 "Scraping_traffic_source_landing_page"),
+      ]
+    else
+      #TODO controler la periodicité
+      date_website = IceCube::Schedule.from_yaml(@periodicity).start_time
+
+      start_time = date_website + DEVICE_PLATFORM_PLUGIN_DAY + DEVICE_PLATFORM_PLUGIN_HOUR
+      periodicity_device_platform_plugin = IceCube::Schedule.new(start_time)
+      periodicity_device_platform_plugin.add_recurrence_rule IceCube::Rule.daily
+
+      start_time = date_website + DEVICE_PLATFORM_RESOLUTION_DAY + DEVICE_PLATFORM_RESOLUTION_HOUR
+      periodicity_device_platform_resolution = IceCube::Schedule.new(start_time)
+      periodicity_device_platform_resolution.add_recurrence_rule IceCube::Rule.daily
+
+      start_time = date_website + TRAFFIC_SOURCE_LANDING_PAGE_DAY + TRAFFIC_SOURCE_LANDING_PAGE_HOUR
+      periodicity_traffic_source_landing_page = IceCube::Schedule.new(start_time)
+      periodicity_traffic_source_landing_page.add_recurrence_rule IceCube::Rule.daily
+
+
+      [Event.new(key,
+                 "Scraping_device_platform_plugin",
+                 periodicity_device_platform_plugin.to_yaml,
+                 business),
+       Event.new(key,
+                 "Scraping_device_platform_resolution",
+                 periodicity_device_platform_resolution.to_yaml,
+                 business),
+       Event.new(key,
+                 "Scraping_traffic_source_landing_page",
+                 periodicity_traffic_source_landing_page.to_yaml,
+                 business),
+       Event.new(key,
+                 "Scraping_website",
+                 @periodicity,
+                 business)
+      ]
+    end
+  end
+end
