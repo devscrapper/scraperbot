@@ -8,8 +8,9 @@ require File.dirname(__FILE__) + '/../lib/logging'
 require 'logger'
 require 'net/ftp'
 require File.dirname(__FILE__) + '/../lib/scraping_google_analytics'
+require File.dirname(__FILE__) + '/../lib/scraping_website'
 require File.dirname(__FILE__) + '/../lib/common'
-
+require File.dirname(__FILE__) + '/../model/google_analytics'
 
 module ScrapeServer
   include Common
@@ -35,14 +36,53 @@ module ScrapeServer
         label = data["label"]
         date_building = data["date_building"]
         profil_id_ga = data["data"]["profil_id_ga"]
+        p label
+        p date_building
+        p profil_id_ga
         Scraping_google_analytics.Scraping_behaviour(label, date_building, profil_id_ga)
         information("scraping behaviour")
+
       when "Scraping_hourly_daily_distribution"
         label = data["label"]
         date_building = data["date_building"]
         profil_id_ga = data["data"]["profil_id_ga"]
         Scraping_google_analytics.Scraping_hourly_daily_distribution(label, date_building, profil_id_ga)
         Information("scraping hourly daily distribution")
+
+      when "Scraping_traffic_source_landing_page"
+        label = data["label"]
+        date_building = data["date_building"]
+        profil_id_ga = data["data"]["profil_id_ga"]
+        Scraping_google_analytics.Scraping_traffic_source_landing_page(label, date_building, profil_id_ga)
+        Information("scraping traffic source landing page")
+
+      when "Scraping_device_platform_resolution"
+        label = data["label"]
+        date_building = data["date_building"]
+        profil_id_ga = data["data"]["profil_id_ga"]
+        p label
+        p date_building
+        p profil_id_ga
+        Scraping_google_analytics.Scraping_device_platform_resolution(label, date_building, profil_id_ga)
+        Information("scraping device platform resolution")
+
+      when "Scraping_device_platform_plugin"
+        label = data["label"]
+        date_building = data["date_building"]
+        profil_id_ga = data["data"]["profil_id_ga"]
+        Scraping_google_analytics.Scraping_device_platform_plugin(label, date_building, profil_id_ga)
+        Information("scraping device platform plugin")
+
+      when "Scraping_website"
+        label = data["label"]
+        date_building = data["date_building"]
+        url_root = data["url_root"]
+        count_page = data["count_page"]
+        schemes = data["schemes"]
+        types = data["types"]
+        Scraping_website.Scraping_pages(label, date_building, url_root, count_page, schemes, types)
+        Information("scraping website")
+
       when "exit"
         EventMachine.stop
       else
@@ -67,7 +107,7 @@ $calendar_server_port=9154
 $ftp_server_port = 9152
 $input_flows_server_ip = "localhost"
 $input_flows_server_port = 9101
-$output_file_size = 1000000
+$output_file_size = 1000000       #TODO supprimer ce parametre car c'est une propriete de Flow
 $statupweb_server_ip = "localhost"
 $statupweb_server_port = 3000
 $envir = "production"
@@ -96,15 +136,15 @@ rescue Exception => e
 end
 
 Common.information("parameters of scrape server : ")
-Common.information( "listening port : #{$listening_port}")
+Common.information("listening port : #{$listening_port}")
 Common.information("calendar server port : #{$calendar_server_port}")
-Common.information( "authentification server port : #{$authentification_server_port}")
-Common.information( "ftp_server_port : #{$ftp_server_port}")
-Common.information( "input_flows server ip : #{$input_flows_server_ip}")
-Common.information( "input_flows server port : #{$input_flows_server_port}")
-Common.information( "statupweb server ip : #{$statupweb_server_ip}")
+Common.information("authentification server port : #{$authentification_server_port}")
+Common.information("ftp_server_port : #{$ftp_server_port}")
+Common.information("input_flows server ip : #{$input_flows_server_ip}")
+Common.information("input_flows server port : #{$input_flows_server_port}")
+Common.information("statupweb server ip : #{$statupweb_server_ip}")
 Common.information("statupweb server port : #{$statupweb_server_port}")
-Common.information( "output file size : #{$output_file_size}")
+Common.information("output file size : #{$output_file_size}")
 
 
 #--------------------------------------------------------------------------------------------------------------------
@@ -112,13 +152,15 @@ Common.information( "output file size : #{$output_file_size}")
 #--------------------------------------------------------------------------------------------------------------------
 Common.information("environement : #{$envir}")
 # démarrage du server
+
+
 EventMachine.run {
   Signal.trap("INT") { EventMachine.stop }
   Signal.trap("TERM") { EventMachine.stop }
-  Common.information ( "scrape server is starting")
+  Common.information ("scrape server is starting")
   EventMachine.start_server "localhost", $listening_port, ScrapeServer
 }
-Common.information ( "scrape server stopped")
+Common.information ("scrape server stopped")
 
 #--------------------------------------------------------------------------------------------------------------------
 # END
