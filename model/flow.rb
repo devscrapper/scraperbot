@@ -17,6 +17,7 @@ class Flow
        :date,
        :vol,
        :ext
+
   #TODO publier la version vers les autres
   #----------------------------------------------------------------------------------------------------------------
   # class methods
@@ -54,13 +55,16 @@ class Flow
     raise FlowException, "Flow not initialize" unless @dir && @type_flow && @label && @date && @ext
   end
 
+  def vol=(vol)
+    @vol = vol.to_s
+  end
   def absolute_path
     File.join(@dir, basename)
   end
 
   def basename
     basename = @type_flow + SEPARATOR + @label + SEPARATOR + @date
-    basename += SEPARATOR + @vol unless @vol.nil?
+    basename += SEPARATOR + @vol unless @vol.empty?
     basename += @ext
     basename
   end
@@ -122,8 +126,8 @@ class Flow
 
   def last()
     return basename if exist?
-    volum = "#{SEPARATOR}#{@vol}" unless @vol.nil?
-    volum = "" if @vol.nil?
+    volum = "#{SEPARATOR}#{@vol}" unless @vol.empty?
+    volum = "" if @vol.empty?
     max_time = Time.new(2001, 01, 01)
     chosen_file = nil
     Dir.glob("#{@dir}#{@type_flow}#{SEPARATOR}#{@label}#{SEPARATOR}*#{volum}#{@ext}").each { |file|
@@ -144,7 +148,7 @@ class Flow
     #renvoi un array contenant les flow de tous les volumes
     raise FlowException, "Flow <#{absolute_path}> not exist" unless exist?
 
-    return [self] if vol.empty? # si le flow n'a pas de volume alors renvoi un tableau avec le flow
+    return [self] if @vol.empty? # si le flow n'a pas de volume alors renvoi un tableau avec le flow
 
     array = []
     crt = self
@@ -162,7 +166,7 @@ class Flow
   def volumes?
     #renvoi le nombre de volume
     raise FlowException, "Flow <#{absolute_path}> not exist" unless exist?
-    return 0 if vol.empty? # si le flow n'a pas de volume alors renvoi 0
+    return 0 if @vol.empty? # si le flow n'a pas de volume alors renvoi 0
     count = 0
     crt = self
     vol = 1
@@ -213,8 +217,10 @@ class Flow
       ftp_server_port,
       vol = nil,
       last_volume = false)
+
     if @vol.empty?
-      # le flox n'a pas de volume => on pousse le flow vers sa destination  et last_volume= true
+
+      # le flow n'a pas de volume => on pousse le flow vers sa destination  et last_volume= true
       push_vol(authentification_server_port,
                input_flows_server_ip,
                input_flows_server_port,
@@ -222,17 +228,23 @@ class Flow
                true)
     else
       # le flow a des volumes
+
       if vol.nil?
+
         # aucune vol n'est précisé donc on pousse tous les volumes en commancant du premier même si le flow courant n'est pas le premier,
         #en précisant pour le dernier le lastvolume = true
         count_volumes = volumes?
+
         volumes.each { |volume|
+
           volume.push_vol(authentification_server_port,
                           input_flows_server_ip,
                           input_flows_server_port,
                           ftp_server_port,
-                          count_volumes == volume.vol) }
+                          count_volumes == volume.vol.to_i) }
+
       else
+
         # on pousse le volume précisé
         # si lastvolume n'est pas précisé alors = false
         @vol = vol
@@ -241,23 +253,26 @@ class Flow
                  input_flows_server_ip,
                  input_flows_server_port,
                  ftp_server_port,
-                 last_volume == true)
+                 last_volume)
       end
 
     end
 
   end
 
-  private
+
   def push_vol(authentification_server_port,
       input_flows_server_ip,
       input_flows_server_port,
       ftp_server_port,
       last_volume = false)
+
     begin
       authen = Authentification.get_one(authentification_server_port)
+
     rescue Exception => e
-      alert("push flow <#{basename}> failed, because new authentification to #{authentification_server_ip}:#{authentification_server_port} failed : #{e.message}")
+
+      alert("push flow <#{basename}> failed, because new authentification to localhost:#{authentification_server_port} failed : #{e.message}")
       raise FlowException
     end
 
@@ -268,10 +283,12 @@ class Flow
           authen.user,
           authen.pwd,
           last_volume)
+
     rescue Exception => e
       alert("push flow <#{basename}> failed, because send properties of flow to input_flow_server (#{input_flows_server_ip}:#{input_flows_server_port}) failed : #{e.message}")
       raise Scraping_google_analyticsException
     end
+
   end
 
   def new_volume()

@@ -203,11 +203,12 @@ module Scraping_google_analytics
       Common.alert("Scraping hourly_daily_distribution for #{label} failed #{e.message}")
     end
     # pousser le flow vers input_flow_server sur engine_bot
+    p 1
     output_flow.push($authentification_server_port,
                      $input_flows_server_ip,
                      $input_flows_server_port,
                      $ftp_server_port)
-
+     p 11
     #TODO mettre à jour la date de scraping hourly daily distribution
     # maj date de scraping sur webstatup
     Common.information("Scraping hourly daily distribution for #{label} is over")
@@ -254,7 +255,6 @@ module Scraping_google_analytics
 # private
 #--------------------------------------------------------------------------------------------------------------
   def to_file(datas, type_flow, label, date)
-    #TODO valider la sauvegarde dans un fichier
     #TODO valider  le multi volume
     output_flow = Flow.new(OUTPUT, type_flow, label, date, 1)
     datas.each { |data|
@@ -318,6 +318,7 @@ module Scraping_google_analytics
           output_flow = Flow.new(OUTPUT, type_flow, label, date, 1)
           FileUtils.cp("#{TEST}#{type_flow}#{SEPARATOR6}#{label}.txt",
                        output_flow.absolute_path)
+          p 3
           output_flow
         rescue Exception => e
           Common.alert(e.message)

@@ -42,7 +42,7 @@ module CalendarServer
         when Policy.name
           event = Policy.new(data_event).to_event
         when Website.name
-          #event = Objective.new(data_event).to_event
+          event = Website.new(data_event).to_event
         else
           alert("object #{object} is not knowned")
       end

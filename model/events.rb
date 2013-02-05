@@ -39,10 +39,14 @@ class Events
     @events << event unless event.is_a?(Array)
   end
 
-  def delete(event)
+  def delete(events)
     @events.each_index { |i|
-      @events.delete_at(i) if @events[i].key == event.key and @events[i].cmd == event.cmd
+      events.each { |event|
+
+        @events.delete_at(i) if @events[i].key == event.key and @events[i].cmd == event.cmd
+      }
     }
+
   end
 
   def execute_one(event)
