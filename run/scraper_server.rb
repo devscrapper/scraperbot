@@ -107,7 +107,6 @@ $calendar_server_port=9154
 $ftp_server_port = 9152
 $input_flows_server_ip = "localhost"
 $input_flows_server_port = 9101
-$output_file_size = 1000000       #TODO supprimer ce parametre car c'est une propriete de Flow
 $statupweb_server_ip = "localhost"
 $statupweb_server_port = 3000
 $envir = "production"
@@ -128,7 +127,6 @@ begin
   $input_flows_server_port = params[$envir]["input_flows_server_port"] unless params[$envir]["input_flows_server_port"].nil?
   $statupweb_server_ip = params[$envir]["statupweb_server_ip"] unless params[$envir]["statupweb_server_ip"].nil?
   $statupweb_server_port = params[$envir]["statupweb_server_port"] unless params[$envir]["statupweb_server_port"].nil?
-  $output_file_size = params[$envir]["output_file_size"] unless params[$envir]["output_file_size"].nil?
   $ftp_server_port = params[$envir]["ftp_server_port"] unless params[$envir]["ftp_server_port"].nil?
 rescue Exception => e
   p e.message
@@ -144,7 +142,7 @@ Common.information("input_flows server ip : #{$input_flows_server_ip}")
 Common.information("input_flows server port : #{$input_flows_server_port}")
 Common.information("statupweb server ip : #{$statupweb_server_ip}")
 Common.information("statupweb server port : #{$statupweb_server_port}")
-Common.information("output file size : #{$output_file_size}")
+
 
 
 #--------------------------------------------------------------------------------------------------------------------

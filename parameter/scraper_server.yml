@@ -7,7 +7,6 @@ development:
   calendar_server_port: 9154
   input_flows_server_ip: localhost
   input_flows_server_port: 9105
-  output_file_size: 1000000
   statupweb_server_ip: localhost
   statupweb_server_port: 3000
 
