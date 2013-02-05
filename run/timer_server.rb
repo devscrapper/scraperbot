@@ -41,3 +41,5 @@ scheduler.cron periodicity do
   end
 
 end
+
+scheduler.join
