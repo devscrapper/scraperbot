@@ -6,7 +6,7 @@ class Flow
   class FlowException < StandardError;
   end
   include Common
-
+  MAX_SIZE = 1000000
   SEPARATOR = "_"
   ARCHIVE = File.dirname(__FILE__) + "/../archive/"
 
@@ -17,10 +17,10 @@ class Flow
        :date,
        :vol,
        :ext
-
-#----------------------------------------------------------------------------------------------------------------
-# class methods
-#----------------------------------------------------------------------------------------------------------------
+  #TODO publier la version vers les autres
+  #----------------------------------------------------------------------------------------------------------------
+  # class methods
+  #----------------------------------------------------------------------------------------------------------------
   def self.from_basename(dir, basename)
     ext = File.extname(basename)
     basename = File.basename(basename, ext)
@@ -49,7 +49,7 @@ class Flow
     @label = label
     @date = date.strftime("%Y-%m-%d") if date.is_a?(Date)
     @date = date unless date.is_a?(Date)
-    @vol = vol
+    @vol = vol.to_s
     @ext = ext
     raise FlowException, "Flow not initialize" unless @dir && @type_flow && @label && @date && @ext
   end
@@ -79,6 +79,14 @@ class Flow
 
   def close
     @descriptor.close if @descriptor.nil?
+  end
+
+  def size
+    #TODO valider la methode size
+    @descriptor = File.open(absolute_path, "r:UTF-8") if @descriptor.nil?
+    size = @descriptor.size
+    #@descriptor.close
+    size
   end
 
   def count_lines(eofline)
@@ -132,14 +140,50 @@ class Flow
     FileUtils.mv(absolute_path, ARCHIVE, :force => true)
   end
 
+  def volumes
+    #renvoi un array contenant les flow de tous les volumes
+    raise FlowException, "Flow <#{absolute_path}> not exist" unless exist?
+
+    return [self] if vol.empty? # si le flow n'a pas de volume alors renvoi un tableau avec le flow
+
+    array = []
+    crt = self
+    vol = 1
+    crt.vol = vol
+    while crt.exist?
+      array << crt
+      crt = Flow.from_absolute_path(crt.absolute_path)
+      vol += 1
+      crt.vol = vol
+    end
+    array
+  end
+
+  def volumes?
+    #renvoi le nombre de volume
+    raise FlowException, "Flow <#{absolute_path}> not exist" unless exist?
+    return 0 if vol.empty? # si le flow n'a pas de volume alors renvoi 0
+    count = 0
+    crt = self
+    vol = 1
+    crt.vol = vol
+    while crt.exist?
+      count += 1
+      crt = Flow.from_absolute_path(crt.absolute_path)
+      vol += 1
+      crt.vol = vol
+    end
+    count
+  end
+
   def put(ip_to, port_to, port_ftp_server, user, pwd, last_volume = false)
     data = {
-            "port_ftp_server" => port_ftp_server,
-            "user" => user,
-            "pwd" => pwd,
-            "type_flow" => @type_flow,
-            "basename" => basename,
-            "last_volume" => last_volume,
+        "port_ftp_server" => port_ftp_server,
+        "user" => user,
+        "pwd" => pwd,
+        "type_flow" => @type_flow,
+        "basename" => basename,
+        "last_volume" => last_volume,
     }
     begin
       Information.new(data).send_to(ip_to, port_to)
@@ -166,7 +210,50 @@ class Flow
   def push(authentification_server_port,
       input_flows_server_ip,
       input_flows_server_port,
-      ftp_server_port)
+      ftp_server_port,
+      vol = nil,
+      last_volume = false)
+    if @vol.empty?
+      # le flox n'a pas de volume => on pousse le flow vers sa destination  et last_volume= true
+      push_vol(authentification_server_port,
+               input_flows_server_ip,
+               input_flows_server_port,
+               ftp_server_port,
+               true)
+    else
+      # le flow a des volumes
+      if vol.nil?
+        # aucune vol n'est précisé donc on pousse tous les volumes en commancant du premier même si le flow courant n'est pas le premier,
+        #en précisant pour le dernier le lastvolume = true
+        count_volumes = volumes?
+        volumes.each { |volume|
+          volume.push_vol(authentification_server_port,
+                          input_flows_server_ip,
+                          input_flows_server_port,
+                          ftp_server_port,
+                          count_volumes == volume.vol) }
+      else
+        # on pousse le volume précisé
+        # si lastvolume n'est pas précisé alors = false
+        @vol = vol
+        raise FlowException, "volume <#{@vol}> of the flow <#{basename}> do not exist" unless exist? # on verifie que le volume passé existe
+        push_vol(authentification_server_port,
+                 input_flows_server_ip,
+                 input_flows_server_port,
+                 ftp_server_port,
+                 last_volume == true)
+      end
+
+    end
+
+  end
+
+  private
+  def push_vol(authentification_server_port,
+      input_flows_server_ip,
+      input_flows_server_port,
+      ftp_server_port,
+      last_volume = false)
     begin
       authen = Authentification.get_one(authentification_server_port)
     rescue Exception => e
@@ -180,10 +267,15 @@ class Flow
           ftp_server_port,
           authen.user,
           authen.pwd,
-          true)
+          last_volume)
     rescue Exception => e
       alert("push flow <#{basename}> failed, because send properties of flow to input_flow_server (#{input_flows_server_ip}:#{input_flows_server_port}) failed : #{e.message}")
       raise Scraping_google_analyticsException
     end
+  end
+
+  def new_volume()
+    raise FlowException, "Flow <#{absolute_path}> has no first volume" if @vol.empty?
+    Flow.new(@dir, @type_flow, @label, @date, @vol + 1, @ext)
   end
 end
