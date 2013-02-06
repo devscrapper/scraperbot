@@ -5,11 +5,11 @@ require File.dirname(__FILE__) + '/../lib/common'
 
 class Events
   EVENTS_FILE = File.dirname(__FILE__) + "/../data/" + File.basename(__FILE__, ".rb") + ".json"
-  attr :events,
-       :load_server_port
+  attr :event
 
-  def initialize(load_server_port)
-    @load_server_port = load_server_port
+
+  def initialize()
+    #TODO reporter la modif vers engine bot
     @events = Array.new
     begin
       JSON.parse(File.read(EVENTS_FILE)).each { |evt|
@@ -19,7 +19,9 @@ class Events
     rescue Exception => e
     end
   end
-
+  def [](i)
+      @events[i]
+  end
   def save()
     events_file = File.open(EVENTS_FILE, "w")
     events_file.sync = true
@@ -49,18 +51,20 @@ class Events
 
   end
 
-  def execute_one(event)
+  def execute_one(event,load_server_port)
+    #TODO reporter la modif vers engine bot
     @events.each { |evt|
-      evt.execute(@load_server_port) if evt.key == event.key and evt.cmd == event.cmd
+      evt.execute(load_server_port) if evt.key == event.key and evt.cmd == event.cmd
     } unless @events.nil?
   end
 
-  def execute_all_at_time(time=Time.now)
+  def execute_all_at_time(time=Time.now,load_server_port)
+    #TODO reporter la modif vers engine bot
     @events.each { |evt|
       schedule =IceCube::Schedule.from_yaml(evt.periodicity)
       if schedule.occurring_at?(time)
         begin
-          evt.execute(@load_server_port, time)
+          evt.execute(load_server_port, time)
         rescue Exception => e
           Common.alert("#{e.message}", __LINE__, __FILE__)
         end
@@ -69,6 +73,13 @@ class Events
     }
   end
 
+  def display()
+    i = 1
+    @events.each { |evt|
+      p "#{i} -> website : #{evt.key["label"]}, cmd #{evt.cmd}"
+      i +=1
+    }
+  end
 end
 
 
