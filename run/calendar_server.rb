@@ -27,7 +27,8 @@ module CalendarServer
   end
 
   def execute_task(data_receive)
-    @events = Events.new($scrape_server_port)
+    @events = Events.new() #TODO reporter la modif vers engine bot
+
     begin
       object = data_receive["object"]
       cmd = data_receive["cmd"]
@@ -58,7 +59,7 @@ module CalendarServer
         when Event::EXECUTE_ONE
           information("execute one event #{event}")
 
-          @events.execute_one(event) if @events.exist?(event)
+          @events.execute_one(event, $scrape_server_port) if @events.exist?(event)
 
           information("event #{event} is not exist") unless @events.exist?(event)
         when Event::SAVE
