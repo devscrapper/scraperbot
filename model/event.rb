@@ -45,7 +45,7 @@ class Event
     begin
       data = {
           "cmd" => @cmd,
-          "label" => @key["label"],
+          "label" => @business["label"],
           "date_building" => @key["building_date"] || Date.today,
           "data" => @business}
       Information.new(data).send_to(load_server_port)
@@ -76,11 +76,11 @@ class Policy
 
   def to_event()
 
-    key = {"policy_id" => @policy_id,
-           "label" => @label
+    key = {"policy_id" => @policy_id
     }
     business = {
-        "profil_id_ga" => @profil_id_ga
+        "profil_id_ga" => @profil_id_ga,
+        "label" => @label
     }
     #Si demande suppression de la policy alors absence de periodicity et de business
     if @periodicity.nil?
@@ -143,10 +143,10 @@ class Website
 
   def to_event()
 
-    key = {"website_id" => @website_id,
-           "label" => @label
+    key = {"website_id" => @website_id
     }
     business = {
+        "label" => @label,
         "profil_id_ga" => @profil_id_ga,
         "url_root" => @url_root,
         "count_page" => @count_page,
@@ -161,6 +161,8 @@ class Website
                  "Scraping_device_platform_resolution"),
        Event.new(key,
                  "Scraping_traffic_source_landing_page"),
+       Event.new(key,
+                 "Scraping_website")
       ]
     else
       #TODO controler la periodicité

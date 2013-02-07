@@ -35,7 +35,7 @@ module CalendarServer
       data_event = data_receive["data"]
       event = nil
       information ("processing request : object : #{object}, cmd : #{cmd}")
-
+      p data_event
       case object
         when Event.name
           event = Event.new(data_event["key"],

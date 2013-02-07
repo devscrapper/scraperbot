@@ -36,9 +36,6 @@ module ScrapeServer
         label = data["label"]
         date_building = data["date_building"]
         profil_id_ga = data["data"]["profil_id_ga"]
-        p label
-        p date_building
-        p profil_id_ga
         Scraping_google_analytics.Scraping_behaviour(label, date_building, profil_id_ga)
         information("scraping behaviour")
 
@@ -80,7 +77,9 @@ module ScrapeServer
         count_page = data["count_page"]
         schemes = data["schemes"]
         types = data["types"]
+        p 1
         Scraping_website.Scraping_pages(label, date_building, url_root, count_page, schemes, types)
+        p 2
         Information("scraping website")
 
       when "exit"

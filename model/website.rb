@@ -2,14 +2,14 @@ require 'rubygems'
 require 'eventmachine'
 require 'json'
 require 'json/ext'
-require File.dirname(__FILE__) + '/page.rb'
+require File.dirname(__FILE__) + '/../model/page.rb'
 require File.dirname(__FILE__) + '/../lib/logging'
 require File.dirname(__FILE__) + '/../model/flow'
 require File.dirname(__FILE__) + '/../lib/common'
 require 'logger'
 
 #TODO valider website
-class Website
+class Toto
   OUTPUT = File.dirname(__FILE__) + "/../output/"
 
   SEPARATOR="%SEP%"

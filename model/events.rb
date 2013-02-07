@@ -5,7 +5,7 @@ require File.dirname(__FILE__) + '/../lib/common'
 
 class Events
   EVENTS_FILE = File.dirname(__FILE__) + "/../data/" + File.basename(__FILE__, ".rb") + ".json"
-  attr :event
+  attr :events
 
 
   def initialize()
@@ -19,8 +19,13 @@ class Events
     rescue Exception => e
     end
   end
+
   def [](i)
-      @events[i]
+    @events[i]
+  end
+
+  def size
+    @events.size
   end
   def save()
     events_file = File.open(EVENTS_FILE, "w")
@@ -44,21 +49,20 @@ class Events
   def delete(events)
     @events.each_index { |i|
       events.each { |event|
-
-        @events.delete_at(i) if @events[i].key == event.key and @events[i].cmd == event.cmd
+        @events.delete_at(i) if @events[i].key == event.key
       }
     }
 
   end
 
-  def execute_one(event,load_server_port)
+  def execute_one(event, load_server_port)
     #TODO reporter la modif vers engine bot
     @events.each { |evt|
       evt.execute(load_server_port) if evt.key == event.key and evt.cmd == event.cmd
     } unless @events.nil?
   end
 
-  def execute_all_at_time(time=Time.now,load_server_port)
+  def execute_all_at_time(time=Time.now, load_server_port)
     #TODO reporter la modif vers engine bot
     @events.each { |evt|
       schedule =IceCube::Schedule.from_yaml(evt.periodicity)
@@ -73,12 +77,26 @@ class Events
     }
   end
 
-  def display()
+  def display_cmd()
     i = 1
     @events.each { |evt|
       p "#{i} -> website : #{evt.key["label"]}, cmd #{evt.cmd}"
       i +=1
     }
+  end
+
+  def display_website()
+    p "websites : "
+    websites = {}
+    @events.each { |evt| websites[evt.key["website_id"]] = evt.business["label"] unless evt.key["website_id"].nil? }
+    websites.each_pair { |key, value| p "#{key} -> website : #{value}" }
+  end
+
+  def display_policy()
+    p "policies : "
+    policies = {}
+    @events.each { |evt| policies[evt.key["policy_id"]] = evt.business["label"] unless evt.key["policy_id"].nil? }
+    policies.each_pair { |key, value| p "#{key} -> website : #{value}" }
   end
 end
 
