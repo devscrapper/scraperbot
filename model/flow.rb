@@ -82,7 +82,7 @@ class Flow
   end
 
   def close
-    @descriptor.close if @descriptor.nil?
+    @descriptor.close unless @descriptor.nil?
   end
 
   def size
