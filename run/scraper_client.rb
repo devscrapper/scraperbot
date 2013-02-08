@@ -7,7 +7,7 @@ require File.dirname(__FILE__) + '/../model/events.rb'
 
 module MyKeyboardHandler
   attr :events,
-      :scrape_server_port
+       :scrape_server_port
   include EM::Protocols::LineText2
 
   def initialize(scrape_server_port)
@@ -25,20 +25,29 @@ module MyKeyboardHandler
       when "r"
         @events = Events.new()
       else
-        data.split.each{|id|
-        evt = @events[id.to_i - 1]
-        p "execute #{evt.cmd} for #{evt.key["label"]}"
-        @events.execute_one(Event.new(evt.key, evt.cmd), @scrape_server_port)
+        data.split.each { |id|
+          if !@events[id.to_i - 1].nil?
+            evt = @events[id.to_i - 1]
+            p "execute #{evt.cmd} for #{evt.key["label"]}"
+            @events.execute_one(Event.new(evt.key, evt.cmd), @scrape_server_port)
+          else
+            p "action <#{id}> unknown"
+          end
+
+
         }
     end
     display
   end
 
   def display()
+    p "--------------------------------------------------------------------------------------------------------------"
     @events.display_cmd
+    p "--------------------------------------------------------------------------------------------------------------"
     p "x -> exit"
     p "r -> reload events"
     p "1 2 ... -> execute many cmd"
+    p "--------------------------------------------------------------------------------------------------------------"
   end
 end
 
@@ -62,5 +71,5 @@ Common.information("parameters of client scraper : ")
 Common.information("scrape server port : #{scrape_server_port}")
 Common.information("environement : #{$envir}")
 EM.run {
-  EM.open_keyboard MyKeyboardHandler , scrape_server_port
+  EM.open_keyboard MyKeyboardHandler, scrape_server_port
 }
