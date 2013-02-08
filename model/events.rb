@@ -27,11 +27,14 @@ class Events
   def size
     @events.size
   end
+
   def save()
-    events_file = File.open(EVENTS_FILE, "w")
-    events_file.sync = true
-    events_file.write(JSON.pretty_generate(@events))
-    events_file.close
+
+      events_file = File.open(EVENTS_FILE, "w")
+      events_file.sync = true
+      events_file.write(JSON.pretty_generate(@events))
+      events_file.close
+
   end
 
   def exist?(event)
@@ -46,14 +49,13 @@ class Events
     @events << event unless event.is_a?(Array)
   end
 
-  def delete(events)
+  def delete(event)
     @events.each_index { |i|
-      events.each { |event|
-        @events.delete_at(i) if @events[i].key == event.key
-      }
+      @events.delete_at(i) if @events[i].key == event.key   and @events[i].cmd == event.cmd
     }
-
   end
+
+
 
   def execute_one(event, load_server_port)
     #TODO reporter la modif vers engine bot
@@ -80,7 +82,7 @@ class Events
   def display_cmd()
     i = 1
     @events.each { |evt|
-      p "#{i} -> website : #{evt.key["label"]}, cmd #{evt.cmd}"
+      p "#{i} -> website : #{evt.business["label"]}, cmd #{evt.cmd}"
       i +=1
     }
   end
