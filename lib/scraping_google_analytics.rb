@@ -35,27 +35,35 @@ module Scraping_google_analytics
   EOFLINE2 ="\n"
   MAX_RESULTS = 10000
   LOG_FILE = File.dirname(__FILE__) + "/../log/" + File.basename(__FILE__, ".rb") + ".log"
-
+  PARAMETERS = File.dirname(__FILE__) + "/../parameter/" + File.basename(__FILE__, ".rb") + ".yml"
 
   #--------------------------------------------------------------------------------------------------------------
   # scraping_device_platform_plugin
   #--------------------------------------------------------------------------------------------------------------
 
+#browser:  "Chrome", "Firefox", "Internet Explorer", "Safari"
+
+#operatingSystem:  "Windows", "Linux", "Macintosh"
   # --------------------------------------------------------------------------------------------------------------
 
   def Scraping_device_platform_plugin(label, date, profil_id_ga)
     Common.information("Scraping device platform plugin for #{label} for #{date} is starting")
     output_flow = nil
     begin
+      params = YAML::load(File.open(PARAMETERS), "r:UTF-8")
+      raise Scraping_google_analyticsException, "filter browser is not define" if params["browser"].nil?
+      raise Scraping_google_analyticsException, "filter operatingSystem is not define" if params["operatingSystem"].nil?
       options={}
       #TODO verifier que le filtrage est bon
+      # ATTENTION : le filtrage ne peut contenir que des rubriques présentes OBLIGATOIREMENT dans la requete dans metrics or dimension
+      # si un filtre n'est pas présent la requete echoué.
       options["filters"] = {
           "flashVersion" => "!(not set)",
           "javaEnabled" => "!(not set)",
           "browserVersion" => "!(not set)",
           "operatingSystemVersion" => "!(not set)",
-          "browser" => ["Chrome", "Firefox", "Internet Explorer", "Safari"],
-          "operatingSystem" => ["Windows", "Linux", "Macintosh"],
+          "browser" => params["browser"],
+          "operatingSystem" => params["operatingSystem"],
           "isMobile" => "No"
       }
       options["sort"] = "-visits"
@@ -66,12 +74,12 @@ module Scraping_google_analytics
                                    label,
                                    date,
                                    profil_id_ga,
-                                   "browser,browserVersion,operatingSystem,operatingSystemVersion,flashVersion,javaEnabled",
+                                   "browser,browserVersion,operatingSystem,operatingSystemVersion,flashVersion,javaEnabled,isMobile",
                                    "visits",
                                    DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
                                    DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
                                    options,
-                                   1) # percent de resultat conservé
+                                   0) # percent de resultat conservé
     rescue Exception => e
       Common.alert("Scraping device platform plugin for #{label} failed #{e.message}")
     end
@@ -98,24 +106,31 @@ module Scraping_google_analytics
     Common.information("Scraping device platform resolution for #{label} for #{date} is starting")
     output_flow = nil
     begin
+      params = YAML::load(File.open(PARAMETERS), "r:UTF-8")
+      raise Scraping_google_analyticsException, "filter browser is not define" if params["browser"].nil?
+      raise Scraping_google_analyticsException, "filter operatingSystem is not define" if params["operatingSystem"].nil?
       options={}
+      #TODO verifier que le filtrage est bon
+      # ATTENTION : le filtrage ne peut contenir que des rubriques présentes OBLIGATOIREMENT dans la requete dans metrics or dimension
+      # si un filtre n'est pas présent la requete echoué.
       options["filters"] = {
-          "screenColors" => "!(not set)",
-          "screenResolution" => "!(not set)",
+          "flashVersion" => "!(not set)",
+          "javaEnabled" => "!(not set)",
           "browserVersion" => "!(not set)",
           "operatingSystemVersion" => "!(not set)",
-          "browser" => ["Chrome", "Firefox", "Internet Explorer", "Safari"],
-          "operatingSystem" => ["Windows", "Linux", "Macintosh"],
+          "browser" => params["browser"],
+          "operatingSystem" => params["operatingSystem"],
           "isMobile" => "No"
       }
       options["sort"] = "-visits"
       options["max-results"] = MAX_RESULTS
+
       #TODO gerer le multi volume
       output_flow = scraping("scraping-device-platform-resolution",
                                    label,
                                    date,
                                    profil_id_ga,
-                                   "browser,browserVersion,operatingSystem,operatingSystemVersion,screenColors,screenResolution",
+                                   "browser,browserVersion,operatingSystem,operatingSystemVersion,screenColors,screenResolution,isMobile",
                                    "visits",
                                    DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
                                    DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
@@ -289,8 +304,11 @@ module Scraping_google_analytics
       client = Google_analytics.new(profil_id_ga)
       begin
         res = client.execute(dimensions, metrics, startDate, endDate, options)
+        p "size(res) #{res.size}"
         res_filtered = filtering_with_filters(res, options["filters"])
+        p "size(res filtered) #{res_filtered.size}"
         res_filtered = filtering_with_percent(res_filtered, metrics, percent)
+        p "size(res filtered) #{res_filtered.size}"
         output_flow = to_file(res_filtered, type_flow, label, date)
         output_flow.volumes.each { |flow| Common.information("flow <#{flow.basename}> is ready") }
         output_flow
@@ -356,8 +374,12 @@ module Scraping_google_analytics
 
   def et(filters, value_row)
     ok = true
+
     filters.each { |key, value|
-      p value_row.nil?
+   #   p value_row.nil?
+   #   p key
+   #   p value
+   #   p value_row[key]
       ok = ok && ou(value, value_row[key])
     }
     ok
