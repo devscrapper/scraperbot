@@ -20,7 +20,10 @@ class Google_analytics
   def initialize(profil_id_ga)
     @profil_id_ga = profil_id_ga
     params = YAML::load(File.open(PARAMETERS) , "r:UTF-8")
-    #TODO lever une exception si envir n'est pas défini
+
+    raise Google_analyticsError, "$envir is not define" if params[$envir].nil?
+    raise Google_analyticsError, "service_account_email is not define" if params[$envir]["service_account_email"].nil?
+    raise Google_analyticsError, "private_key is not define" if params[$envir]["private_key"].nil?
     service_account_email = params[$envir]["service_account_email"] #"33852996685@developer.gserviceaccount.com" # Email of service account
     private_key =  params[$envir]["private_key"] #"7b2746cb605ca688f68d25d860cb6878e93e25c9-privatekey.p12"
     ENV['SSL_CERT_FILE'] = CREDENTIALS + "cacert.pem"
@@ -101,7 +104,9 @@ class Google_analytics
         Common.error("request to google failed : #{e.message}")
         raise Google_analyticsError, e.message
       end
+      p "size(max result ga) #{results_ga.data.totalResults}"
       start_index += MAX_RESULT_PER_QUERY - 1
+      #TODO controler le paging google
       continue = false if start_index >= results_ga.data.totalResults or start_index >= max_elements_request
     end
     results
