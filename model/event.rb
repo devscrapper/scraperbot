@@ -145,14 +145,7 @@ class Website
 
     key = {"website_id" => @website_id
     }
-    business = {
-        "label" => @label,
-        "profil_id_ga" => @profil_id_ga,
-        "url_root" => @url_root,
-        "count_page" => @count_page,
-        "schemes" => @schemes,
-        "types" => @types
-    }
+
     #Si demande suppression de la website alors absence de periodicity et de business
     if @periodicity.nil?
       [Event.new(key,
@@ -180,7 +173,10 @@ class Website
       periodicity_traffic_source_landing_page = IceCube::Schedule.new(start_time)
       periodicity_traffic_source_landing_page.add_recurrence_rule IceCube::Rule.daily
 
-
+      business = {
+          "label" => @label,
+          "profil_id_ga" => @profil_id_ga
+      }
       [Event.new(key,
                  "Scraping_device_platform_plugin",
                  periodicity_device_platform_plugin.to_yaml,
@@ -196,7 +192,14 @@ class Website
        Event.new(key,
                  "Scraping_website",
                  @periodicity,
-                 business)
+                 {
+                     "label" => @label,
+                     "profil_id_ga" => @profil_id_ga,
+                     "url_root" => @url_root,
+                     "count_page" => @count_page,
+                     "schemes" => @schemes,
+                     "types" => @types
+                 })
       ]
     end
   end
