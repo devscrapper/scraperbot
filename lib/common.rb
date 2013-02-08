@@ -46,4 +46,5 @@ module Common
   module_function :alert
   module_function :warning
   module_function :error
+  module_function :debug
 end
