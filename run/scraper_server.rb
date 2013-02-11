@@ -73,13 +73,11 @@ module ScrapeServer
       when "Scraping_website"
         label = data["label"]
         date_building = data["date_building"]
-        url_root = data["url_root"]
-        count_page = data["count_page"]
-        schemes = data["schemes"]
-        types = data["types"]
-        p 1
+        url_root = data["data"]["url_root"]
+        count_page = data["data"]["count_page"]
+        schemes = data["data"]["schemes"].split
+        types = data["data"]["types"].split
         Scraping_website.Scraping_pages(label, date_building, url_root, count_page, schemes, types)
-        p 2
         Information("scraping website")
 
       when "exit"
