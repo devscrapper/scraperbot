@@ -86,11 +86,8 @@ class Flow
   end
 
   def size
-    #TODO valider la methode size
     @descriptor = File.open(absolute_path, "r:UTF-8") if @descriptor.nil?
-    size = @descriptor.size
-    #@descriptor.close
-    size
+    @descriptor.size
   end
 
   def count_lines(eofline)
@@ -293,6 +290,7 @@ class Flow
 
   def new_volume()
     raise FlowException, "Flow <#{absolute_path}> has no first volume" if @vol.empty?
-    Flow.new(@dir, @type_flow, @label, @date, @vol + 1, @ext)
+    close
+    Flow.new(@dir, @type_flow, @label, @date, @vol.to_i + 1, @ext)
   end
 end

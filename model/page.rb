@@ -4,8 +4,8 @@ require 'domainatrix'
 require 'json'
 require 'json/ext'
 # ---------------------------------------------------------------------------------------------------------------------
-# TODO :
-# rediger les commentaires pour les input
+#
+#  TODO :rediger les commentaires pour les input
 # ---------------------------------------------------------------------------------------------------------------------
 
 
@@ -102,7 +102,6 @@ class Page
       rescue Exception => e
       end
     }.compact
-
     # on retourne un nombre limite si besoin
     @links = @links[0..count_link - 1] if count_link != NO_LIMIT
     @links

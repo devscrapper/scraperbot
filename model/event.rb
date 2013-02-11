@@ -78,10 +78,7 @@ class Policy
 
     key = {"policy_id" => @policy_id
     }
-    business = {
-        "profil_id_ga" => @profil_id_ga,
-        "label" => @label
-    }
+
     #Si demande suppression de la policy alors absence de periodicity et de business
     if @periodicity.nil?
       [Event.new(key,
@@ -101,6 +98,10 @@ class Policy
       periodicity_behaviour.remove_recurrence_rule IceCube::Rule.weekly.day(:sunday)
       periodicity_behaviour.add_recurrence_rule IceCube::Rule.weekly.until(periodicity_behaviour.end_time)
 
+      business = {
+          "profil_id_ga" => @profil_id_ga,
+          "label" => @label
+      }
       [Event.new(key,
                  "Scraping_hourly_daily_distribution",
                  periodicity_hourly_daily_distribution.to_yaml,
