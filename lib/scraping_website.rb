@@ -165,12 +165,17 @@ module Scraping_website
     Common.information("Scraping pages for #{@label} is over")
     @f.close
     @ferror.close
-
     # informer Load_server qu'il peut telecharger le dernier volume
     @push_file_spawn.notify @f, true
-    # EM.stop pour le bench
-    #TODO mettre à jour la date de scraping du website
     # maj date de scraping sur webstatup
+    begin
+      options = {"path" => "/websites/#{@label}/scraping_date",
+                 "scheme" => "http"}
+      Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
+      Common.information("Updating scraping date for Website <#{@label}>")
+    rescue Exception => e
+      Common.alert("Updating scraping date for Website <#{@label}> failed : #{e.message}")
+    end
   end
 
 

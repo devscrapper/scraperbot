@@ -31,18 +31,18 @@ module MyKeyboardHandler
               query = {"cmd" => "delete", "object" => "Website", "data" => {"website_id" => @events[event].key["website_id"].to_i}} unless @events[event].key["website_id"].nil?
               query = {"cmd" => "delete", "object" => "Policy", "data" => {"policy_id" => @events[event].key["policy_id"].to_i}} unless @events[event].key["policy_id"].nil?
               p "delete cmd <#{@events[event].cmd}> for #{@events[event].business["label"]}"
-              Information.new(query).send_to("localhost", @calendar_server_port)
+              Information.new(query).send_local(@calendar_server_port)
             }
           when "w"
             data[4..data.size - 0].split.each { |website_id|
               query = {"cmd" => "delete", "object" => "Website", "data" => {"website_id" => website_id.to_i}}
-              Information.new(query).send_to("localhost", @calendar_server_port)
+              Information.new(query).send_local(@calendar_server_port)
             }
           when "p"
             data[4..data.size - 0].split.each { |policy_id|
               query = {"cmd" => "delete", "object" => "Policy", "data" => {"policy_id" => policy_id.to_i}}
               p query
-              Information.new(query).send_to("localhost", @calendar_server_port)
+              Information.new(query).send_local(@calendar_server_port)
             }
           else
             p "object <#{data.split[1]}> unknown"
@@ -61,7 +61,7 @@ module MyKeyboardHandler
                 "cmd" => "execute_all",
                 "data" => {"time" => now._dump.force_encoding("UTF-8")}}
 
-        Information.new(data).send_to(@calendar_server_port)
+        Information.new(data).send_local(@calendar_server_port)
         }
       when "h"
         now = Time.local(Date.today.year,
@@ -73,7 +73,7 @@ module MyKeyboardHandler
                 "cmd" => "execute_all",
                 "data" => {"time" => now._dump.force_encoding("UTF-8")}}
 
-        Information.new(data).send_to(@calendar_server_port)
+        Information.new(data).send_local(@calendar_server_port)
       else
         p "action <#{data}> unknown"
     end
@@ -90,8 +90,8 @@ module MyKeyboardHandler
     p "r -> reload objects"
     p "d [w|p] 1 2 ... -> delete many object[website|policy]"
     p "d a -> delete all objects"
-    p "e -> execute a day"
-    p "h n  -> execute all cmd of hour n"
+    #TODO p "e -> execute a day"
+    #TODO p "h n  -> execute all cmd of hour n"
     p "--------------------------------------------------------------------------------------------------------------"
   end
 end

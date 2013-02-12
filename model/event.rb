@@ -48,7 +48,7 @@ class Event
           "label" => @business["label"],
           "date_building" => @key["building_date"] || Date.today,
           "data" => @business}
-      Information.new(data).send_to(load_server_port)
+      Information.new(data).send_local(load_server_port)
       Common.information("send cmd #{@cmd} for #{@key["label"]} for #{data["date_building"]} at #{time} to scraper_server success")
     rescue Exception => e
       Common.alert("send cmd #{@cmd} for #{@key["label"]} for #{data["date_building"]} at #{time} to scraper_server failed : #{e.message}", __LINE__)

@@ -41,9 +41,9 @@ module Scraping_google_analytics
   # scraping_device_platform_plugin
   #--------------------------------------------------------------------------------------------------------------
 
-#browser:  "Chrome", "Firefox", "Internet Explorer", "Safari"
+  #browser:  "Chrome", "Firefox", "Internet Explorer", "Safari"
 
-#operatingSystem:  "Windows", "Linux", "Macintosh"
+  #operatingSystem:  "Windows", "Linux", "Macintosh"
   # --------------------------------------------------------------------------------------------------------------
 
   def Scraping_device_platform_plugin(label, date, profil_id_ga)
@@ -54,7 +54,6 @@ module Scraping_google_analytics
       raise Scraping_google_analyticsException, "filter browser is not define" if params["browser"].nil?
       raise Scraping_google_analyticsException, "filter operatingSystem is not define" if params["operatingSystem"].nil?
       options={}
-      #TODO verifier que le filtrage est bon
       # ATTENTION : le filtrage ne peut contenir que des rubriques présentes OBLIGATOIREMENT dans la requete dans metrics or dimension
       # si un filtre n'est pas présent la requete echoué.
       options["filters"] = {
@@ -71,29 +70,39 @@ module Scraping_google_analytics
 
       #TODO gerer le multi volume
       output_flow = scraping("scraping-device-platform-plugin",
-                                   label,
-                                   date,
-                                   profil_id_ga,
-                                   "browser,browserVersion,operatingSystem,operatingSystemVersion,flashVersion,javaEnabled,isMobile",
-                                   "visits",
-                                   DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
-                                   DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
-                                   options,
-                                   0) # percent de resultat conservé
+                             label,
+                             date,
+                             profil_id_ga,
+                             "browser,browserVersion,operatingSystem,operatingSystemVersion,flashVersion,javaEnabled,isMobile",
+                             "visits",
+                             DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
+                             DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
+                             options,
+                             0) # percent de resultat conservé
     rescue Exception => e
       Common.alert("Scraping device platform plugin for #{label} failed #{e.message}")
     end
     #TODO gerer le multi volume
     # pousser le flow vers input_flow_server sur engine_bot
-    output_flow.push($authentification_server_port,
-                     $input_flows_server_ip,
-                     $input_flows_server_port,
-                     $ftp_server_port)
-
-    #TODO mettre à jour la date de scraping device platform plugin
-    # maj date de scraping sur webstatup
+    begin
+      output_flow.push($authentification_server_port,
+                       $input_flows_server_ip,
+                       $input_flows_server_port,
+                       $ftp_server_port)
+    rescue Exception => e
+      Common.alert("Output_flow device platform plugin push to input flow server for #{label} failed #{e.message}")
+    end
+    begin
+      options = {"path" => "/websites/#{label}/device_platforme_querying_date",
+                 "scheme" => "http"}
+      Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
+      Common.information("Updating device platform querying date for Website <#{label}>")
+    rescue Exception => e
+      Common.alert("Updating device platform querying for Website <#{label}> failed : #{e.message}")
+    end
     Common.information("Scraping device platform plugin for #{label} is over")
   end
+
 
   #--------------------------------------------------------------------------------------------------------------
   # scraping_device_platform_resolution
@@ -110,7 +119,6 @@ module Scraping_google_analytics
       raise Scraping_google_analyticsException, "filter browser is not define" if params["browser"].nil?
       raise Scraping_google_analyticsException, "filter operatingSystem is not define" if params["operatingSystem"].nil?
       options={}
-      #TODO verifier que le filtrage est bon
       # ATTENTION : le filtrage ne peut contenir que des rubriques présentes OBLIGATOIREMENT dans la requete dans metrics or dimension
       # si un filtre n'est pas présent la requete echoué.
       options["filters"] = {
@@ -127,27 +135,37 @@ module Scraping_google_analytics
 
       #TODO gerer le multi volume
       output_flow = scraping("scraping-device-platform-resolution",
-                                   label,
-                                   date,
-                                   profil_id_ga,
-                                   "browser,browserVersion,operatingSystem,operatingSystemVersion,screenColors,screenResolution,isMobile",
-                                   "visits",
-                                   DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
-                                   DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
-                                   options,
-                                   1) # percent de resultat conservé)
+                             label,
+                             date,
+                             profil_id_ga,
+                             "browser,browserVersion,operatingSystem,operatingSystemVersion,screenColors,screenResolution,isMobile",
+                             "visits",
+                             DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
+                             DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
+                             options,
+                             1) # percent de resultat conservé)
     rescue Exception => e
       Common.alert("Scraping device platform resolution for #{label} failed #{e.message}")
     end
     #TODO gerer le multi volume
     # pousser le flow vers input_flow_server sur engine_bot
-    output_flow.push($authentification_server_port,
-                     $input_flows_server_ip,
-                     $input_flows_server_port,
-                     $ftp_server_port)
-
-    #TODO mettre à jour la date de scraping traffic source
+    begin
+      output_flow.push($authentification_server_port,
+                       $input_flows_server_ip,
+                       $input_flows_server_port,
+                       $ftp_server_port)
+    rescue Exception => e
+      Common.alert("Output_flow device platform resolution push to input flow server for #{label} failed #{e.message}")
+    end
     # maj date de scraping sur webstatup
+    begin
+      options = {"path" => "/websites/#{label}/device_platforme_querying_date",
+                 "scheme" => "http"}
+      Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
+      Common.information("Updating device platform querying date for Website <#{label}>")
+    rescue Exception => e
+      Common.alert("Updating device platform querying for Website <#{label}> failed : #{e.message}")
+    end
     Common.information("Scraping device platform resolution for #{label} is over")
   end
 
@@ -166,26 +184,36 @@ module Scraping_google_analytics
       options["max-results"] = MAX_RESULTS
       #TODO gerer le multi volume
       output_flow = scraping("scraping-traffic-source-landing-page",
-                                   label,
-                                   date,
-                                   profil_id_ga,
-                                   "hostname,landingPagePath,referralPath,source,medium,keyword",
-                                   "entrances",
-                                   DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
-                                   DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
-                                   options) # percent de resultat conservé
+                             label,
+                             date,
+                             profil_id_ga,
+                             "hostname,landingPagePath,referralPath,source,medium,keyword",
+                             "entrances",
+                             DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
+                             DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
+                             options) # percent de resultat conservé
     rescue Exception => e
       Common.alert("Scraping traffic source for #{label} failed #{e.message}")
     end
     #TODO gerer le multi volume
     # pousser le flow vers input_flow_server sur engine_bot
-    output_flow.push($authentification_server_port,
-                     $input_flows_server_ip,
-                     $input_flows_server_port,
-                     $ftp_server_port)
-
-    #TODO mettre à jour la date de scraping traffic source
+    begin
+      output_flow.push($authentification_server_port,
+                       $input_flows_server_ip,
+                       $input_flows_server_port,
+                       $ftp_server_port)
+    rescue Exception => e
+      Common.alert("Output_flow traffic source push to input flow server for #{label} failed #{e.message}")
+    end
     # maj date de scraping sur webstatup
+    begin
+      options = {"path" => "/websites/#{label}/traffic_source_querying_date",
+                 "scheme" => "http"}
+      Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
+      Common.information("Updating traffic source landing page querying date for Website <#{label}>")
+    rescue Exception => e
+      Common.alert("Updating traffic source landing page querying for Website <#{label}> failed : #{e.message}")
+    end
     Common.information("Scraping traffic source for #{label} is over")
   end
 
@@ -206,28 +234,39 @@ module Scraping_google_analytics
       options["max-results"] = 24 * 7
 
       output_flow = scraping("scraping-hourly-daily-distribution",
-                                   label,
-                                   date,
-                                   profil_id_ga,
-                                   "day,hour,date",
-                                   "visits",
-                                   DateTime.now.prev_day(7).strftime("%Y-%m-%d"),
-                                   DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
-                                   options)
+                             label,
+                             date,
+                             profil_id_ga,
+                             "day,hour,date",
+                             "visits",
+                             DateTime.now.prev_day(7).strftime("%Y-%m-%d"),
+                             DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
+                             options)
     rescue Exception => e
       Common.alert("Scraping hourly_daily_distribution for #{label} failed #{e.message}")
     end
     # pousser le flow vers input_flow_server sur engine_bot
-    p 1
-    output_flow.push($authentification_server_port,
-                     $input_flows_server_ip,
-                     $input_flows_server_port,
-                     $ftp_server_port)
-     p 11
-    #TODO mettre à jour la date de scraping hourly daily distribution
+    begin
+      output_flow.push($authentification_server_port,
+                       $input_flows_server_ip,
+                       $input_flows_server_port,
+                       $ftp_server_port)
+    rescue Exception => e
+      Common.alert("Output_flow hourly daily distribution  push to input flow server for #{label} failed #{e.message}")
+    end
+
     # maj date de scraping sur webstatup
+    begin
+      options = {"path" => "/websites/#{label}/hourly_daily_distribution_querying_date",
+                 "scheme" => "http"}
+      Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
+      Common.information("Updating hourly daily distribution querying date for Website <#{label}>")
+    rescue Exception => e
+      Common.alert("Updating hourly daily distribution querying for Website <#{label}> failed : #{e.message}")
+    end
     Common.information("Scraping hourly daily distribution for #{label} is over")
   end
+
 
 #--------------------------------------------------------------------------------------------------------------
 # Scraping_behaviour
@@ -256,15 +295,26 @@ module Scraping_google_analytics
     end
     #TODO gerer le multi volume
     # pousser le flow vers input_flow_server sur engine_bot
+    begin
     output_flow.push($authentification_server_port,
                      $input_flows_server_ip,
                      $input_flows_server_port,
                      $ftp_server_port)
+    rescue Exception => e
+      Common.alert("Output_flow behaviour push to input flow server for #{label} failed #{e.message}")
+    end
 
-
-    #TODO mettre à jour la date de scraping behaviour
+    begin
+      options = {"path" => "/websites/#{label}/behaviour_querying_date",
+                 "scheme" => "http"}
+      Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
+      Common.information("Updating behaviour querying date for Website <#{label}>")
+    rescue Exception => e
+      Common.alert("Updating behaviour querying for Website <#{label}> failed : #{e.message}")
+    end
     Common.information("Scraping behaviour for #{label} is over")
   end
+
 
 #--------------------------------------------------------------------------------------------------------------
 # private
@@ -376,10 +426,10 @@ module Scraping_google_analytics
     ok = true
 
     filters.each { |key, value|
-   #   p value_row.nil?
-   #   p key
-   #   p value
-   #   p value_row[key]
+      #   p value_row.nil?
+      #   p key
+      #   p value
+      #   p value_row[key]
       ok = ok && ou(value, value_row[key])
     }
     ok

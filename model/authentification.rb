@@ -19,6 +19,6 @@ class Authentification
   end
 
   def delete(port_server)
-    Information.new({"cmd" => "delete", "authentification" => self}).send_to(port_server)
+    Information.new({"cmd" => "delete", "authentification" => self}).send_local(port_server)
   end
 end

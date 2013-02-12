@@ -35,7 +35,7 @@ scheduler.cron periodicity do
             "cmd" => "execute_all",
             "data" => {"time" => now._dump.force_encoding("UTF-8")}}
 
-    Information.new(data).send_to(calendar_server_port)
+    Information.new(data).send_local(calendar_server_port)
   rescue Exception => e
     Common.alert("execute all cmd at time #{now} failed", __LINE__)
   end

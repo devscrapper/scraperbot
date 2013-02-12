@@ -66,15 +66,20 @@ module CalendarServer
           $sem.synchronize {
             information("save  #{object}   #{event.to_s}")
             if event.is_a?(Array)
+                              p 1
               event.each { |e|
+                p 2
                 @events.delete(e) if @events.exist?(e)
+                p 3
                 @events.add(e)
+                p 4
               }
             else
+              p 3
               @events.delete(event) if @events.exist?(event)
               @events.add(event)
             end
-
+              p 5
             @events.save
           }
         when Event::DELETE
