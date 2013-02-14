@@ -34,6 +34,9 @@ class Event
     }.to_json(*a)
   end
 
+  def to_display()
+
+  end
   def to_s(*a)
     {
         "key" => @key,
@@ -41,17 +44,18 @@ class Event
     }.to_s(*a)
   end
 
-  def execute(load_server_port, time = Time.now)
+  def execute(load_server_port)
     begin
       data = {
           "cmd" => @cmd,
           "label" => @business["label"],
           "date_building" => @key["building_date"] || Date.today,
           "data" => @business}
+
       Information.new(data).send_local(load_server_port)
-      Common.information("send cmd #{@cmd} for #{@key["label"]} for #{data["date_building"]} at #{time} to scraper_server success")
+      Common.information("send cmd #{@cmd} for #{data["label"]} to scraper_server for #{data["date_building"]}")
     rescue Exception => e
-      Common.alert("send cmd #{@cmd} for #{@key["label"]} for #{data["date_building"]} at #{time} to scraper_server failed : #{e.message}", __LINE__)
+      Common.alert("send cmd #{@cmd} for #{@key["label"]} to scraper_server for #{data["date_building"]}   failed : #{e.message}", __LINE__)
     end
   end
 end
@@ -65,38 +69,34 @@ class Policy
   attr :label,
        :profil_id_ga,
        :policy_id,
-       :periodicity
+       :monday_start,
+       :count_weeks
 
   def initialize(data)
     @label = data["label"]
     @profil_id_ga = data["profil_id_ga"]
     @policy_id = data["policy_id"]
-    @periodicity = data["periodicity"]
+    @monday_start = Time.local(data["monday_start"].year, data["monday_start"].month, data["monday_start"].day) # iceCube a besoin d'un Time et pas d'un Date
+    @count_weeks = data["count_weeks"].to_i
   end
 
   def to_event()
-
-    key = {"policy_id" => @policy_id
-    }
+    key = {"policy_id" => @policy_id}
 
     #Si demande suppression de la policy alors absence de periodicity et de business
-    if @periodicity.nil?
+    if @count_weeks.nil? and @monday_start.nil?
       [Event.new(key,
                  "Scraping_hourly_daily_distribution"),
        Event.new(key,
                  "Scraping_behaviour")]
     else
-      periodicity_hourly_daily_distribution = IceCube::Schedule.from_yaml(@periodicity)
-      periodicity_hourly_daily_distribution.start_time += HOURLY_DAILY_DISTRIBUTION_DAY + HOURLY_DAILY_DISTRIBUTION_HOUR
-      periodicity_hourly_daily_distribution.end_time += HOURLY_DAILY_DISTRIBUTION_DAY
-      periodicity_hourly_daily_distribution.remove_recurrence_rule IceCube::Rule.weekly.day(:sunday)
-      periodicity_hourly_daily_distribution.add_recurrence_rule IceCube::Rule.weekly.until(periodicity_hourly_daily_distribution.end_time)
+      periodicity_hourly_daily_distribution = IceCube::Schedule.new(@monday_start + HOURLY_DAILY_DISTRIBUTION_DAY + HOURLY_DAILY_DISTRIBUTION_HOUR,
+                                                                    :end_time => @monday_start + @count_weeks * IceCube::ONE_WEEK)
+      periodicity_hourly_daily_distribution.add_recurrence_rule IceCube::Rule.weekly.until(@monday_start + @count_weeks * IceCube::ONE_WEEK)
 
-      periodicity_behaviour = IceCube::Schedule.from_yaml(@periodicity)
-      periodicity_behaviour.start_time += BEHAVIOUR_DAY + BEHAVIOUR_HOUR
-      periodicity_behaviour.end_time += BEHAVIOUR_DAY
-      periodicity_behaviour.remove_recurrence_rule IceCube::Rule.weekly.day(:sunday)
-      periodicity_behaviour.add_recurrence_rule IceCube::Rule.weekly.until(periodicity_behaviour.end_time)
+      periodicity_behaviour = IceCube::Schedule.new(@monday_start + BEHAVIOUR_DAY + BEHAVIOUR_HOUR,
+                                                                    :end_time => @monday_start + @count_weeks * IceCube::ONE_WEEK)
+      periodicity_behaviour.add_recurrence_rule IceCube::Rule.weekly.until(@monday_start + @count_weeks * IceCube::ONE_WEEK)
 
       business = {
           "profil_id_ga" => @profil_id_ga,
@@ -112,6 +112,8 @@ class Policy
                  business)]
     end
   end
+
+
 end
 
 
@@ -144,8 +146,7 @@ class Website
 
   def to_event()
 
-    key = {"website_id" => @website_id
-    }
+    key = {"website_id" => @website_id}
 
     #Si demande suppression de la website alors absence de periodicity et de business
     if @periodicity.nil?
@@ -159,19 +160,33 @@ class Website
                  "Scraping_website")
       ]
     else
-      #TODO controler la periodicité
-      date_website = IceCube::Schedule.from_yaml(@periodicity).start_time
+      case @periodicity
+        when "daily"
+          rule_every = IceCube::Rule.daily
+        when "weekly"
+          rule_every = IceCube::Rule.weekly
+        when "yearly"
+          rule_every = IceCube::Rule.yearly
+      end
 
-      start_time = date_website + DEVICE_PLATFORM_PLUGIN_DAY + DEVICE_PLATFORM_PLUGIN_HOUR
-      periodicity_device_platform_plugin = IceCube::Schedule.new(start_time)
+      # iceCube a besoin d'un Time et pas d'un Date
+      today = Time.local(Date.today.year, Date.today.month, Date.today.day)
+      next_monday = Time.local(next_monday(Date.today).year,
+                               next_monday(Date.today).month,
+                               next_monday(Date.today).day)
+      # pas de date de fin, car c'est la suppression du website qui supprime la recuperation des données et du scraping
+      periodicity_scraping_website = IceCube::Schedule.new(today + IceCube::ONE_DAY) # premier scraping le lendemain de l'enregistrement
+      periodicity_scraping_website.add_recurrence_rule rule_every
+
+      # on demarre la planification pour le prochain lundi qui suit l'enregistrement du website
+      # pas de date de fin, car c'est la suppression du website qui supprime la recuperation des données et du scraping
+      periodicity_device_platform_plugin = IceCube::Schedule.new(next_monday + DEVICE_PLATFORM_PLUGIN_DAY + DEVICE_PLATFORM_PLUGIN_HOUR)
       periodicity_device_platform_plugin.add_recurrence_rule IceCube::Rule.daily
 
-      start_time = date_website + DEVICE_PLATFORM_RESOLUTION_DAY + DEVICE_PLATFORM_RESOLUTION_HOUR
-      periodicity_device_platform_resolution = IceCube::Schedule.new(start_time)
+      periodicity_device_platform_resolution = IceCube::Schedule.new(next_monday + DEVICE_PLATFORM_RESOLUTION_DAY + DEVICE_PLATFORM_RESOLUTION_HOUR)
       periodicity_device_platform_resolution.add_recurrence_rule IceCube::Rule.daily
 
-      start_time = date_website + TRAFFIC_SOURCE_LANDING_PAGE_DAY + TRAFFIC_SOURCE_LANDING_PAGE_HOUR
-      periodicity_traffic_source_landing_page = IceCube::Schedule.new(start_time)
+      periodicity_traffic_source_landing_page = IceCube::Schedule.new(next_monday + TRAFFIC_SOURCE_LANDING_PAGE_DAY + TRAFFIC_SOURCE_LANDING_PAGE_HOUR)
       periodicity_traffic_source_landing_page.add_recurrence_rule IceCube::Rule.daily
 
       business = {
@@ -192,7 +207,7 @@ class Website
                  business),
        Event.new(key,
                  "Scraping_website",
-                 @periodicity,
+                 periodicity_scraping_website.to_yaml,
                  {
                      "label" => @label,
                      "profil_id_ga" => @profil_id_ga,
@@ -203,5 +218,18 @@ class Website
                  })
       ]
     end
+  end
+
+  def next_monday(date)
+    today = Date.parse(date) if date.is_a?(String)
+    today = date if date.is_a?(Date)
+
+    return today if today.monday?
+    return today.next_day(1) if today.sunday?
+    return today.next_day(2) if today.saturday?
+    return today.next_day(3) if today.friday?
+    return today.next_day(4) if today.thursday?
+    return today.next_day(5) if today.wednesday?
+    return today.next_day(6) if today.tuesday?
   end
 end

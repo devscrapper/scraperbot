@@ -34,52 +34,44 @@ module CalendarServer
       cmd = data_receive["cmd"]
       data_event = data_receive["data"]
       event = nil
-      information ("processing request : object : #{object}, cmd : #{cmd}")
-      p data_event
       case object
         when Event.name
           event = Event.new(data_event["key"],
                             data_event["cmd"]) if !data_event["key"].nil? and !data_event["cmd"].nil?
         when Policy.name
+          information("receive Policy for website #{data_event["label"]}")
+          debug("details policy : #{data_event}")
           event = Policy.new(data_event).to_event
         when Website.name
+          information("receive Website #{data_event["label"]}")
+          debug("details Website : #{data_event}")
           event = Website.new(data_event).to_event
         else
           alert("object #{object} is not knowned")
       end
       case cmd
         when Event::EXECUTE_ALL
-          if !data_event["time"].nil?
-            time = Time._load(data_event["time"])
-            information("execute all jobs at time #{time}")
-            @events.execute_all_at_time(time)
+          if !data_event["date"].nil? and !data_event["hour"].nil?
+            information("execute all jobs at date #{data_event["date"]}, hour #{data_event["hour"]}")
+            Events.execute_all_at_time(data_event["date"], data_event["hour"], $scrape_server_port)
           else
             alert("execute all jobs at time failed because no time was set")
           end
-        when Event::EXECUTE_ONE
-          information("execute one event #{event}")
-
-          @events.execute_one(event, $scrape_server_port) if @events.exist?(event)
-
-          information("event #{event} is not exist") unless @events.exist?(event)
         when Event::SAVE
           $sem.synchronize {
-            information("save  #{object}   #{event.to_s}")
+
             if event.is_a?(Array)
-                              p 1
               event.each { |e|
-                p 2
+
                 @events.delete(e) if @events.exist?(e)
-                p 3
                 @events.add(e)
-                p 4
+                information("save cmd #{e.cmd} for #{e.business["label"]}")
               }
             else
-              p 3
               @events.delete(event) if @events.exist?(event)
               @events.add(event)
+              information("save cmd #{event.cmd} for #{e.business["label"]}")
             end
-              p 5
             @events.save
           }
         when Event::DELETE
@@ -96,9 +88,9 @@ module CalendarServer
     end
   end
 end
- #--------------------------------------------------------------------------------------------------------------------
- # INIT
- #--------------------------------------------------------------------------------------------------------------------
+                   #--------------------------------------------------------------------------------------------------------------------
+                   # INIT
+                   #--------------------------------------------------------------------------------------------------------------------
 $sem = Mutex.new
 $log_file = File.dirname(__FILE__) + "/../log/" + File.basename(__FILE__, ".rb") + ".log"
 $data_file = File.dirname(__FILE__) + "/../data/" + File.basename(__FILE__, ".rb") + ".json"

@@ -27,10 +27,9 @@ class Google_analytics
     service_account_email = params[$envir]["service_account_email"] #"33852996685@developer.gserviceaccount.com" # Email of service account
     private_key =  params[$envir]["private_key"] #"7b2746cb605ca688f68d25d860cb6878e93e25c9-privatekey.p12"
     ENV['SSL_CERT_FILE'] = CREDENTIALS + "cacert.pem"
-    p ENV['SSL_CERT_FILE']
-    p "service_account_email <#{service_account_email}>"
-    p "private_key <#{private_key}>"
-    p "private key file <#{CREDENTIALS + private_key}>"
+    Common.debug(ENV['SSL_CERT_FILE'])
+    Common.debug("service_account_email <#{service_account_email}>")
+    Common.debug("private key file <#{CREDENTIALS + private_key}>")
     begin
       @client = Google::APIClient.new()
       key = Google::APIClient::PKCS12.load_key(CREDENTIALS + private_key,
@@ -41,7 +40,7 @@ class Google_analytics
                                                     key)
       @client.authorization = asserter.authorize()
       @analytics = @client.discovered_api('analytics', 'v3')
-      Common.information("connection to google analytics for #{@profil_id_ga} is ok ")
+      Common.information("connection to google analytics for #{@profil_id_ga}")
     rescue Exception => e
       Common.error("connection to google analytics for #{@profil_id_ga} failed : #{e.message} ")
       raise Google_analyticsError, e.message

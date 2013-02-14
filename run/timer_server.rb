@@ -27,13 +27,15 @@ Common.information("calendar server port : #{calendar_server_port}")
 
 scheduler = Rufus::Scheduler.start_new
 #declenche :
-#toutes les heures de tous les jours de la semaine
+#toutes les heures de tous les jours de la semaine voir paramter file
 scheduler.cron periodicity do
   begin
     now = Time.now #
+    start_date = Date.new(now.year, now.month, now.day)
+    hour = now.hour
     data = {"object" => "Event",
             "cmd" => "execute_all",
-            "data" => {"time" => now._dump.force_encoding("UTF-8")}}
+            "data" => {"date" => start_date, "hour" => hour}}
 
     Information.new(data).send_local(calendar_server_port)
   rescue Exception => e

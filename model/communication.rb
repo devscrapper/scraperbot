@@ -14,23 +14,38 @@ class Communication
   end
 
   def initialize(data_go)
+
     @data_go_yaml = YAML::dump data_go
+
     begin
+
       @data_go_hash = data_go.to_hash
-    rescue Exception => e
+
+    rescue
+
       @data_go_hash = nil
+
     end
+
     @data_go = data_go
+
   end
 
-  def send_data_to_TCPSocket_server(remote_ip="localhost", remote_port)
+  def send_data_to_TCPSocket_server(remote_ip, remote_port)
+
     begin
       s = TCPSocket.new remote_ip, remote_port
+
       s.puts @data_go_yaml
+
       local_port, local_ip = Socket.unpack_sockaddr_in(s.getsockname)
+
     rescue Exception => e
+
       Common.alert("cannot send data <#{@data_go}> from <#{local_ip}:#{local_port}> to <#{remote_ip}:#{remote_port}> : #{e.message}")
+
       raise CommunicationException, e.message
+
     end
   end
 
@@ -65,10 +80,11 @@ class Information < Communication
   end
 
   def send_to(remote_ip, remote_port, options=nil)
+
     begin
       send_data_to_TCPSocket_server(remote_ip, remote_port) if options.nil?
       send_data_to_http_server(remote_ip, remote_port, options["path"]) if !options.nil? and options["scheme"] == "http"
-      Common.information("send Information <#{@data_go}> to <#{remote_ip}:#{remote_port}>")
+      Common.debug("send Information <#{@data_go}> to <#{remote_ip}:#{remote_port}>")
     rescue Exception => e
       Common.alert("cannot send Information <#{@data_go}> to <#{remote_ip}:#{remote_port}> : #{e.message}")
       raise InformationException, e.message
@@ -91,7 +107,7 @@ class Question < Communication
       s = TCPSocket.new remote_ip, remote_port
       s.puts @data_go_yaml
       local_port, local_ip = Socket.unpack_sockaddr_in(s.getsockname)
-      Common.information("ask Question <#{@data_go}> to <#{remote_ip}:#{remote_port}>")
+      Common.debug("ask Question <#{@data_go}> to <#{remote_ip}:#{remote_port}>")
     rescue Exception => e
       Common.alert("ask Question <#{@data_go}> to <#{remote_ip}:#{remote_port}> failed : #{e.message}")
       raise QuestionException, e.message
@@ -113,3 +129,4 @@ class Question < Communication
   end
 
 end
+

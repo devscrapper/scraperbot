@@ -7,6 +7,17 @@ class Events
   EVENTS_FILE = File.dirname(__FILE__) + "/../data/" + File.basename(__FILE__, ".rb") + ".json"
   attr :events
 
+  def self.execute_all_at_time(date, hour, load_server_port)
+    #TODO reporter la modif vers engine bot
+    Events.new.on_hour(date, hour).each { |evt|
+      begin
+        evt[0].execute(load_server_port)
+      rescue Exception => e
+        Common.alert("#{e.message}", __LINE__, __FILE__)
+      end
+    }
+  end
+
 
   def initialize()
     #TODO reporter la modif vers engine bot
@@ -30,10 +41,10 @@ class Events
 
   def save()
 
-      events_file = File.open(EVENTS_FILE, "w")
-      events_file.sync = true
-      events_file.write(JSON.pretty_generate(@events))
-      events_file.close
+    events_file = File.open(EVENTS_FILE, "w")
+    events_file.sync = true
+    events_file.write(JSON.pretty_generate(@events))
+    events_file.close
 
   end
 
@@ -51,10 +62,9 @@ class Events
 
   def delete(event)
     @events.each_index { |i|
-      @events.delete_at(i) if @events[i].key == event.key   and @events[i].cmd == event.cmd
+      @events.delete_at(i) if @events[i].key == event.key and @events[i].cmd == event.cmd
     }
   end
-
 
 
   def execute_one(event, load_server_port)
@@ -62,21 +72,6 @@ class Events
     @events.each { |evt|
       evt.execute(load_server_port) if evt.key == event.key and evt.cmd == event.cmd
     } unless @events.nil?
-  end
-
-  def execute_all_at_time(time=Time.now, load_server_port)
-    #TODO reporter la modif vers engine bot
-    @events.each { |evt|
-      schedule =IceCube::Schedule.from_yaml(evt.periodicity)
-      if schedule.occurring_at?(time)
-        begin
-          evt.execute(load_server_port, time)
-        rescue Exception => e
-          Common.alert("#{e.message}", __LINE__, __FILE__)
-        end
-      end
-
-    }
   end
 
   def display_cmd()
@@ -100,6 +95,31 @@ class Events
     @events.each { |evt| policies[evt.key["policy_id"]] = evt.business["label"] unless evt.key["policy_id"].nil? }
     policies.each_pair { |key, value| p "#{key} -> website : #{value}" }
   end
+
+  def on_hour(date, hour)
+    start_time = Time.local(date.year, date.month, date.day, hour, 0, 0)
+    on_period(start_time, start_time + IceCube::ONE_HOUR)
+  end
+
+  def on_day(date)
+    start_time = Time.local(date.year, date.month, date.day)
+    on_period(start_time, start_time + 23 * IceCube::ONE_HOUR)
+  end
+
+  def on_week(date)
+    start_time = Time.local(date.year, date.month, date.day)
+    on_period(start_time, start_time + IceCube::ONE_WEEK)
+  end
+
+  def on_period(start_time, end_time)
+    selected_events = []
+    @events.each { |evt|
+      occurences = IceCube::Schedule.from_yaml(evt.periodicity).occurrences_between(start_time, end_time)
+      selected_events << [evt, occurences] unless occurences.empty?
+    }
+    selected_events
+  end
+
 end
 
 
