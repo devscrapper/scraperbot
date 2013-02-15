@@ -76,8 +76,8 @@ class Policy
     @label = data["label"]
     @profil_id_ga = data["profil_id_ga"]
     @policy_id = data["policy_id"]
-    @monday_start = Time.local(data["monday_start"].year, data["monday_start"].month, data["monday_start"].day) # iceCube a besoin d'un Time et pas d'un Date
-    @count_weeks = data["count_weeks"].to_i
+    @monday_start = Time.local(data["monday_start"].year, data["monday_start"].month, data["monday_start"].day) unless data["monday_start"].nil? # iceCube a besoin d'un Time et pas d'un Date
+    @count_weeks = data["count_weeks"].to_i  unless data["count_weeks"].nil?
   end
 
   def to_event()
@@ -150,6 +150,7 @@ class Website
 
     #Si demande suppression de la website alors absence de periodicity et de business
     if @periodicity.nil?
+      p 2
       [Event.new(key,
                  "Scraping_device_platform_plugin"),
        Event.new(key,

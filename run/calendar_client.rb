@@ -40,14 +40,15 @@ module MyKeyboardHandler
               Information.new(query).send_local(@calendar_server_port)
             }
           when "w"
-            data[4..data.size - 0].split.each { |website_id|
+            data[4..data.size - 1].split.each { |website_id|
               query = {"cmd" => "delete", "object" => "Website", "data" => {"website_id" => website_id.to_i}}
+              p "delete Website #{website_id}"
               Information.new(query).send_local(@calendar_server_port)
             }
           when "p"
             data[4..data.size - 0].split.each { |policy_id|
               query = {"cmd" => "delete", "object" => "Policy", "data" => {"policy_id" => policy_id.to_i}}
-              p query
+              p "delete Policy #{policy_id}"
               Information.new(query).send_local(@calendar_server_port)
             }
           else

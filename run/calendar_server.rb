@@ -19,7 +19,6 @@ module CalendarServer
     debug("data receive : #{param}")
     close_connection
     begin
-      #TODO on reste en thread tant que pas effet de bord et pas d'explosion du nombre de thread car plus rapide
       Thread.new { execute_task(YAML::load param) }
     rescue Exception => e
       alert("data receive #{param} : #{e.message}")
@@ -39,11 +38,11 @@ module CalendarServer
           event = Event.new(data_event["key"],
                             data_event["cmd"]) if !data_event["key"].nil? and !data_event["cmd"].nil?
         when Policy.name
-          information("receive Policy for website #{data_event["label"]}")
+          information("receive Policy")
           debug("details policy : #{data_event}")
           event = Policy.new(data_event).to_event
         when Website.name
-          information("receive Website #{data_event["label"]}")
+          information("receive Website")
           debug("details Website : #{data_event}")
           event = Website.new(data_event).to_event
         else
@@ -59,27 +58,20 @@ module CalendarServer
           end
         when Event::SAVE
           $sem.synchronize {
-
-            if event.is_a?(Array)
-              event.each { |e|
-
-                @events.delete(e) if @events.exist?(e)
-                @events.add(e)
-                information("save cmd #{e.cmd} for #{e.business["label"]}")
-              }
-            else
-              @events.delete(event) if @events.exist?(event)
-              @events.add(event)
-              information("save cmd #{event.cmd} for #{e.business["label"]}")
-            end
+            event.each { |e|
+              @events.delete(e) if @events.exist?(e)
+              @events.add(e)
+              information("save cmd #{e.cmd} for #{e.business["label"]}")
+            }
             @events.save
           }
         when Event::DELETE
-          #TODO etudier le problème de la suppression d'une policy et de son impact sur la planification construite apres execution du building_objectives
-          #TODO premier analyse : la répercution sur les objectives sera réalisée par la suppression de objective dans statupweb par declenchement par callback
           $sem.synchronize {
-            information("delete  #{object}   #{event.to_s}")
-            @events.delete(event)
+            event.each { |e|
+              p e
+              @events.delete(e)
+              information("delete cmd #{e.cmd} for #{e.key}")
+            }
             @events.save
           }
         else
