@@ -16,7 +16,6 @@ module AuthentificationServer
     debug ("data receive : #{param}")
 
     begin
-      #TODO on reste en thread tant que pas effet de bord et pas d'explosion du nombre de thread car plus rapide
       Thread.new { execute_task(YAML::load param) }
     rescue Exception => e
       warning("data receive #{param} : #{e.message}")

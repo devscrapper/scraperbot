@@ -114,7 +114,7 @@ class Question < Communication
     end
     begin
       @data_back = ""
-      while line = s.gets
+      while (line = s.gets)
         @data_back += "#{line}"
       end
       local_port, local_ip = Socket.unpack_sockaddr_in(s.getsockname)

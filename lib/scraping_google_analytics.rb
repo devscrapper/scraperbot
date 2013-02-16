@@ -68,7 +68,6 @@ module Scraping_google_analytics
       options["sort"] = "-visits"
       options["max-results"] = MAX_RESULTS
 
-      #TODO gerer le multi volume
       output_flow = scraping("scraping-device-platform-plugin",
                              label,
                              date,
@@ -82,7 +81,7 @@ module Scraping_google_analytics
     rescue Exception => e
       Common.alert("Scraping device platform plugin for #{label} failed #{e.message}")
     end
-    #TODO gerer le multi volume
+
     # pousser le flow vers input_flow_server sur engine_bot
     begin
       output_flow.push($authentification_server_port,
@@ -133,7 +132,7 @@ module Scraping_google_analytics
       options["sort"] = "-visits"
       options["max-results"] = MAX_RESULTS
 
-      #TODO gerer le multi volume
+
       output_flow = scraping("scraping-device-platform-resolution",
                              label,
                              date,
@@ -147,7 +146,7 @@ module Scraping_google_analytics
     rescue Exception => e
       Common.alert("Scraping device platform resolution for #{label} failed #{e.message}")
     end
-    #TODO gerer le multi volume
+
     # pousser le flow vers input_flow_server sur engine_bot
     begin
       output_flow.push($authentification_server_port,
@@ -177,12 +176,13 @@ module Scraping_google_analytics
 
   def Scraping_traffic_source_landing_page(label, date, profil_id_ga)
     Common.information("Scraping traffic source for #{label} for #{date} is starting")
+
     output_flow = nil
     begin
       options={}
       options["sort"] = "-entrances"
       options["max-results"] = MAX_RESULTS
-      #TODO gerer le multi volume
+
       output_flow = scraping("scraping-traffic-source-landing-page",
                              label,
                              date,
@@ -191,11 +191,12 @@ module Scraping_google_analytics
                              "entrances",
                              DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
                              DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
-                             options) # percent de resultat conservé
+                             options,
+                             1) # percent de resultat conservé
     rescue Exception => e
       Common.alert("Scraping traffic source for #{label} failed #{e.message}")
     end
-    #TODO gerer le multi volume
+
     # pousser le flow vers input_flow_server sur engine_bot
     begin
       output_flow.push($authentification_server_port,
@@ -280,7 +281,7 @@ module Scraping_google_analytics
       options={}
       options["sort"] = "date"
       options["max-results"] = 7
-      #TODO gerer le multi volume
+
       output_flow = scraping("scraping-behaviour",
                              label,
                              date,
@@ -293,13 +294,13 @@ module Scraping_google_analytics
     rescue Exception => e
       Common.alert("Scraping behaviour for #{label} failed : #{e.message}")
     end
-    #TODO gerer le multi volume
+
     # pousser le flow vers input_flow_server sur engine_bot
     begin
-    output_flow.push($authentification_server_port,
-                     $input_flows_server_ip,
-                     $input_flows_server_port,
-                     $ftp_server_port)
+      output_flow.push($authentification_server_port,
+                       $input_flows_server_ip,
+                       $input_flows_server_port,
+                       $ftp_server_port)
     rescue Exception => e
       Common.alert("Output_flow behaviour push to input flow server for #{label} failed #{e.message}")
     end
@@ -320,18 +321,24 @@ module Scraping_google_analytics
 # private
 #--------------------------------------------------------------------------------------------------------------
   def to_file(datas, type_flow, label, date)
-    #TODO valider  le multi volume
+
     output_flow = Flow.new(OUTPUT, type_flow, label, date, 1)
+
     datas.each { |data|
+
       line = ""
       data.each { |key, value| line += "#{value}#{SEPARATOR2}" }
+
       output_flow.write("#{line}#{EOFLINE2}")
+
       if output_flow.size > Flow::MAX_SIZE
+
         # new flow
-        output_flow.close
         output_flow = output_flow.new_volume()
+
       end
     }
+
     output_flow
   end
 
@@ -386,7 +393,6 @@ module Scraping_google_analytics
           output_flow = Flow.new(OUTPUT, type_flow, label, date, 1)
           FileUtils.cp("#{TEST}#{type_flow}#{SEPARATOR6}#{label}.txt",
                        output_flow.absolute_path)
-          p 3
           output_flow
         rescue Exception => e
           Common.alert(e.message)
@@ -426,10 +432,6 @@ module Scraping_google_analytics
     ok = true
 
     filters.each { |key, value|
-      #   p value_row.nil?
-      #   p key
-      #   p value
-      #   p value_row[key]
       ok = ok && ou(value, value_row[key])
     }
     ok

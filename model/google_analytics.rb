@@ -19,16 +19,23 @@ class Google_analytics
 
   def initialize(profil_id_ga)
     @profil_id_ga = profil_id_ga
+    begin
     params = YAML::load(File.open(PARAMETERS) , "r:UTF-8")
-
+    rescue Exception => e
+      Common.error("load parameter file #{PARAMETERS} : #{e.message}")
+    end
     raise Google_analyticsError, "$envir is not define" if params[$envir].nil?
     raise Google_analyticsError, "service_account_email is not define" if params[$envir]["service_account_email"].nil?
     raise Google_analyticsError, "private_key is not define" if params[$envir]["private_key"].nil?
+
     service_account_email = params[$envir]["service_account_email"] #"33852996685@developer.gserviceaccount.com" # Email of service account
     private_key =  params[$envir]["private_key"] #"7b2746cb605ca688f68d25d860cb6878e93e25c9-privatekey.p12"
     ENV['SSL_CERT_FILE'] = CREDENTIALS + "cacert.pem"
-    Common.debug(ENV['SSL_CERT_FILE'])
+
+    Common.debug("#{ENV['SSL_CERT_FILE']}")
+
     Common.debug("service_account_email <#{service_account_email}>")
+
     Common.debug("private key file <#{CREDENTIALS + private_key}>")
     begin
       @client = Google::APIClient.new()
@@ -60,7 +67,6 @@ class Google_analytics
     max_elements_request = options["max-results"].to_i unless options["max-results"].nil?
 
     params = {'ids' => "ga:#{@profil_id_ga}",
-              'start-index' => start_index,
               'dimensions' => dimensions.split(SEPARATOR).map! { |dimension| "ga:#{dimension}" }.join(SEPARATOR),
               'metrics' => metrics.split(SEPARATOR).map! { |metric| "ga:#{metric}" }.join(SEPARATOR),
               'start-date' => start_date,
@@ -90,6 +96,7 @@ class Google_analytics
     results = []
     while continue
       begin
+        params['start-index']  = start_index
         results_ga = client.execute!(:api_method => @analytics.data.ga.get, :parameters => params)
         results_ga.data.rows.each { |row|
           res_row = {}
@@ -104,9 +111,9 @@ class Google_analytics
         raise Google_analyticsError, e.message
       end
       p "size(max result ga) #{results_ga.data.totalResults}"
-      start_index += MAX_RESULT_PER_QUERY - 1
-      #TODO controler le paging google
-      continue = false if start_index >= results_ga.data.totalResults or start_index >= max_elements_request
+      p "count row #{results.size}"
+      start_index += MAX_RESULT_PER_QUERY
+      continue = false if results.size >= results_ga.data.totalResults
     end
     results
   end

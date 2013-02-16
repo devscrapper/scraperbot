@@ -22,7 +22,6 @@ module ScrapeServer
     debug ("data receive : #{param}")
     close_connection
     begin
-      #TODO on reste en thread tant que pas effet de bord et pas d'explosion du nombre de thread car plus rapide
       Thread.new { execute_task(YAML::load(param)) }
     rescue Exception => e
       warning("data receive #{param} : #{e.message}")
@@ -57,9 +56,6 @@ module ScrapeServer
         label = data["label"]
         date_building = data["date_building"]
         profil_id_ga = data["data"]["profil_id_ga"]
-        p label
-        p date_building
-        p profil_id_ga
         Scraping_google_analytics.Scraping_device_platform_resolution(label, date_building, profil_id_ga)
         Information("scraping device platform resolution")
 
