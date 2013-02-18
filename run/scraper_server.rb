@@ -35,35 +35,40 @@ module ScrapeServer
         label = data["label"]
         date_building = data["date_building"]
         profil_id_ga = data["data"]["profil_id_ga"]
-        Scraping_google_analytics.Scraping_behaviour(label, date_building, profil_id_ga)
+        website_id = data["data"]["website_id"]
+        Scraping_google_analytics.Scraping_behaviour(label, date_building, profil_id_ga, website_id)
         information("scraping behaviour")
 
       when "Scraping_hourly_daily_distribution"
         label = data["label"]
         date_building = data["date_building"]
         profil_id_ga = data["data"]["profil_id_ga"]
-        Scraping_google_analytics.Scraping_hourly_daily_distribution(label, date_building, profil_id_ga)
+        website_id = data["data"]["website_id"]
+        Scraping_google_analytics.Scraping_hourly_daily_distribution(label, date_building, profil_id_ga, website_id)
         Information("scraping hourly daily distribution")
 
       when "Scraping_traffic_source_landing_page"
         label = data["label"]
         date_building = data["date_building"]
         profil_id_ga = data["data"]["profil_id_ga"]
-        Scraping_google_analytics.Scraping_traffic_source_landing_page(label, date_building, profil_id_ga)
+        website_id = data["data"]["website_id"]
+        Scraping_google_analytics.Scraping_traffic_source_landing_page(label, date_building, profil_id_ga, website_id)
         Information("scraping traffic source landing page")
 
       when "Scraping_device_platform_resolution"
         label = data["label"]
         date_building = data["date_building"]
         profil_id_ga = data["data"]["profil_id_ga"]
-        Scraping_google_analytics.Scraping_device_platform_resolution(label, date_building, profil_id_ga)
+        website_id = data["data"]["website_id"]
+        Scraping_google_analytics.Scraping_device_platform_resolution(label, date_building, profil_id_ga, website_id)
         Information("scraping device platform resolution")
 
       when "Scraping_device_platform_plugin"
         label = data["label"]
         date_building = data["date_building"]
         profil_id_ga = data["data"]["profil_id_ga"]
-        Scraping_google_analytics.Scraping_device_platform_plugin(label, date_building, profil_id_ga)
+        website_id = data["data"]["website_id"]
+        Scraping_google_analytics.Scraping_device_platform_plugin(label, date_building, profil_id_ga, website_id)
         Information("scraping device platform plugin")
 
       when "Scraping_website"
@@ -73,7 +78,8 @@ module ScrapeServer
         count_page = data["data"]["count_page"]
         schemes = data["data"]["schemes"].split
         types = data["data"]["types"].split
-        Scraping_website.Scraping_pages(label, date_building, url_root, count_page, schemes, types)
+        website_id = data["data"]["website_id"]
+        Scraping_website.Scraping_pages(label, date_building, url_root, count_page, schemes, types, website_id)
         Information("scraping website")
 
       when "exit"

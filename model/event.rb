@@ -71,12 +71,14 @@ class Policy
        :profil_id_ga,
        :policy_id,
        :monday_start,
-       :count_weeks
+       :count_weeks,
+       :website_id
 
   def initialize(data)
     @label = data["label"]
     @profil_id_ga = data["profil_id_ga"]
     @policy_id = data["policy_id"]
+    @website_id = data["website_id"]
     @monday_start = Time.local(data["monday_start"].year, data["monday_start"].month, data["monday_start"].day) unless data["monday_start"].nil? # iceCube a besoin d'un Time et pas d'un Date
     @count_weeks = data["count_weeks"].to_i unless data["count_weeks"].nil?
   end
@@ -101,7 +103,8 @@ class Policy
 
       business = {
           "profil_id_ga" => @profil_id_ga,
-          "label" => @label
+          "label" => @label,
+          "website_id" => @website_id
       }
       [Event.new(key,
                  "Scraping_hourly_daily_distribution",
@@ -196,7 +199,8 @@ class Website
 
       business = {
           "label" => @label,
-          "profil_id_ga" => @profil_id_ga
+          "profil_id_ga" => @profil_id_ga,
+          "website_id" => @website_id
       }
       [Event.new(key,
                  "Scraping_device_platform_plugin",
@@ -219,7 +223,8 @@ class Website
                      "url_root" => @url_root,
                      "count_page" => @count_page,
                      "schemes" => @schemes,
-                     "types" => @types
+                     "types" => @types,
+                     "website_id" => @website_id
                  })
       ]
     end

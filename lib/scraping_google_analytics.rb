@@ -46,7 +46,7 @@ module Scraping_google_analytics
   #operatingSystem:  "Windows", "Linux", "Macintosh"
   # --------------------------------------------------------------------------------------------------------------
 
-  def Scraping_device_platform_plugin(label, date, profil_id_ga)
+  def Scraping_device_platform_plugin(label, date, profil_id_ga, website_id)
     Common.information("Scraping device platform plugin for #{label} for #{date} is starting")
     output_flow = nil
     begin
@@ -92,7 +92,7 @@ module Scraping_google_analytics
       Common.alert("Output_flow device platform plugin push to input flow server for #{label} failed #{e.message}")
     end
     begin
-      options = {"path" => "/websites/#{label}/device_platforme_querying_date",
+      options = {"path" => "/websites/#{website_id}/device_platforme_querying_date",
                  "scheme" => "http"}
       Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
       Common.information("Updating device platform querying date for Website <#{label}>")
@@ -109,7 +109,7 @@ module Scraping_google_analytics
 
   # --------------------------------------------------------------------------------------------------------------
 
-  def Scraping_device_platform_resolution(label, date, profil_id_ga)
+  def Scraping_device_platform_resolution(label, date, profil_id_ga, website_id)
 
     Common.information("Scraping device platform resolution for #{label} for #{date} is starting")
     output_flow = nil
@@ -158,7 +158,7 @@ module Scraping_google_analytics
     end
     # maj date de scraping sur webstatup
     begin
-      options = {"path" => "/websites/#{label}/device_platforme_querying_date",
+      options = {"path" => "/websites/#{website_id}/device_platforme_querying_date",
                  "scheme" => "http"}
       Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
       Common.information("Updating device platform querying date for Website <#{label}>")
@@ -174,7 +174,7 @@ module Scraping_google_analytics
 
   # --------------------------------------------------------------------------------------------------------------
 
-  def Scraping_traffic_source_landing_page(label, date, profil_id_ga)
+  def Scraping_traffic_source_landing_page(label, date, profil_id_ga, website_id)
     Common.information("Scraping traffic source for #{label} for #{date} is starting")
 
     output_flow = nil
@@ -208,7 +208,7 @@ module Scraping_google_analytics
     end
     # maj date de scraping sur webstatup
     begin
-      options = {"path" => "/websites/#{label}/traffic_source_querying_date",
+      options = {"path" => "/websites/#{website_id}/traffic_source_querying_date",
                  "scheme" => "http"}
       Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
       Common.information("Updating traffic source landing page querying date for Website <#{label}>")
@@ -226,8 +226,8 @@ module Scraping_google_analytics
 # --------------------------------------------------------------------------------------------------------------
 
 
-  def Scraping_hourly_daily_distribution(label, date, profil_id_ga)
-    Common.information("Scraping hourly daily distribution for #{label} for #{date} is starting")
+  def Scraping_hourly_daily_distribution(label, date, profil_id_ga, website_id)
+        Common.information("Scraping hourly daily distribution for #{label} for #{date} is starting")
     output_flow = nil
     begin
       options={}
@@ -258,7 +258,7 @@ module Scraping_google_analytics
 
     # maj date de scraping sur webstatup
     begin
-      options = {"path" => "/websites/#{label}/hourly_daily_distribution_querying_date",
+      options = {"path" => "/websites/#{website_id}/hourly_daily_distribution_querying_date",
                  "scheme" => "http"}
       Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
       Common.information("Updating hourly daily distribution querying date for Website <#{label}>")
@@ -274,7 +274,7 @@ module Scraping_google_analytics
 #--------------------------------------------------------------------------------------------------------------
 
 # --------------------------------------------------------------------------------------------------------------
-  def Scraping_behaviour(label, date, profil_id_ga)
+  def Scraping_behaviour(label, date, profil_id_ga, website_id)
     Common.information("Scraping behaviour for #{label} for #{date} is starting")
     output_flow = nil
     begin
@@ -306,7 +306,7 @@ module Scraping_google_analytics
     end
 
     begin
-      options = {"path" => "/websites/#{label}/behaviour_querying_date",
+      options = {"path" => "/websites/#{website_id}/behaviour_querying_date",
                  "scheme" => "http"}
       Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
       Common.information("Updating behaviour querying date for Website <#{label}>")

@@ -42,14 +42,15 @@ module Scraping_website
        :run_spawn,
        :start_spawn,
        :stop_spawn,
-       :push_file_spawn
+       :push_file_spawn,
+       :website_id
 #--------------------------------------------------------------------------------------------------------------
 # scraping_device_platform_plugin
 #--------------------------------------------------------------------------------------------------------------
 
 # --------------------------------------------------------------------------------------------------------------
 
-  def Scraping_pages(label, date, url_root, count_page, schemes, types)
+  def Scraping_pages(label, date, url_root, count_page, schemes, types, website_id)
     Common.information("Scraping pages for #{label} for #{date} is starting")
     @host = url_root
     @label = label
@@ -57,6 +58,7 @@ module Scraping_website
     @count_page = count_page
     @schemes = schemes
     @types = types
+    @website_id = website_id
 
     @start_spawn = EM.spawn {
       Scraping_website.start()
@@ -169,7 +171,7 @@ module Scraping_website
     @push_file_spawn.notify @f, true
     # maj date de scraping sur webstatup
     begin
-      options = {"path" => "/websites/#{@label}/scraping_date",
+      options = {"path" => "/websites/#{@website_id}/scraping_date",
                  "scheme" => "http"}
       Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
       Common.information("Updating scraping date for Website <#{@label}>")

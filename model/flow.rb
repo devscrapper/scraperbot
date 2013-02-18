@@ -9,7 +9,7 @@ class Flow
   MAX_SIZE = 1000000
   SEPARATOR = "_"
   ARCHIVE = File.dirname(__FILE__) + "/../archive/"
-
+  FORBIDDEN_CHAR = /[_ ]/
   attr :descriptor,
        :dir,
        :type_flow,
@@ -46,8 +46,8 @@ class Flow
 
   def initialize(dir, type_flow, label, date, vol=nil, ext=".txt")
     @dir = dir
-    @type_flow = type_flow
-    @label = label
+    @type_flow = type_flow.gsub(FORBIDDEN_CHAR, "_") #le label ne doit pas contenir les caractères interdits
+    @label = label.gsub(FORBIDDEN_CHAR, "-") #le label ne doit pas contenir les caractères interdits
     @date = date.strftime("%Y-%m-%d") if date.is_a?(Date)
     @date = date unless date.is_a?(Date)
     @vol = vol.to_s
@@ -83,6 +83,7 @@ class Flow
 
   def close
     @descriptor.close unless @descriptor.nil?
+    @descriptor = nil
   end
 
   def size
