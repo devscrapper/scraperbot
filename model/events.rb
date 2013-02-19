@@ -114,7 +114,7 @@ class Events
   def on_period(start_time, end_time)
     selected_events = []
     @events.each { |evt|
-      occurences = IceCube::Schedule.from_yaml(evt.periodicity).occurrences_between(start_time, end_time)
+      occurences = IceCube::Schedule.from_yaml(evt.periodicity).occurrences_between(start_time, end_time - IceCube::ONE_SECOND)  # end_time exclue
       selected_events << [evt, occurences] unless occurences.empty?
     }
     selected_events
