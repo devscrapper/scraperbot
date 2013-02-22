@@ -6,10 +6,10 @@ class Flow
   class FlowException < StandardError;
   end
   include Common
-  MAX_SIZE = 1000000
-  SEPARATOR = "_"
-  ARCHIVE = File.dirname(__FILE__) + "/../archive/"
-  FORBIDDEN_CHAR = /[_ ]/
+  MAX_SIZE = 1000000 # taille max d'un volume
+  SEPARATOR = "_" # separateur entre elemet composant (type_flow, label, date, vol) le nom du volume (basename)
+  ARCHIVE = File.dirname(__FILE__) + "/../archive/" #localisation du repertoire d'archive
+  FORBIDDEN_CHAR = /[_ ]/ # liste des caractères interdits dans le typeflow et label d'un volume
   attr :descriptor,
        :dir,
        :type_flow,
@@ -22,6 +22,7 @@ class Flow
   #----------------------------------------------------------------------------------------------------------------
   # class methods
   #----------------------------------------------------------------------------------------------------------------
+
   def self.from_basename(dir, basename)
     ext = File.extname(basename)
     basename = File.basename(basename, ext)
@@ -46,11 +47,11 @@ class Flow
 
   def initialize(dir, type_flow, label, date, vol=nil, ext=".txt")
     @dir = dir
-    @type_flow = type_flow.gsub(FORBIDDEN_CHAR, "_") #le label ne doit pas contenir les caractères interdits
+    @type_flow = type_flow.gsub(FORBIDDEN_CHAR, "-") #le label ne doit pas contenir les caractères interdits
     @label = label.gsub(FORBIDDEN_CHAR, "-") #le label ne doit pas contenir les caractères interdits
     @date = date.strftime("%Y-%m-%d") if date.is_a?(Date)
     @date = date unless date.is_a?(Date)
-    @vol = vol.to_s
+    @vol = vol.to_s unless vol.nil?
     @ext = ext
     raise FlowException, "Flow not initialize" unless @dir && @type_flow && @label && @date && @ext
   end
@@ -58,6 +59,7 @@ class Flow
   def vol=(vol)
     @vol = vol.to_s
   end
+
   def absolute_path
     File.join(@dir, basename)
   end
@@ -71,6 +73,7 @@ class Flow
 
 
   def write(data)
+    Common.debug("WRITE basename #{basename}")
     @descriptor = File.open(absolute_path, "w:UTF-8") if @descriptor.nil?
     @descriptor.sync = true
     @descriptor.write(data)
@@ -82,6 +85,7 @@ class Flow
   end
 
   def close
+    Common.debug("CLOSE basename #{basename}")
     @descriptor.close unless @descriptor.nil?
     @descriptor = nil
   end
@@ -190,8 +194,7 @@ class Flow
     begin
       Information.new(data).send_to(ip_to, port_to)
     rescue Exception => e
-      alert("put flow <#{basename}> to #{ip_to}:#{port_to} failed : #{e.message}")
-      raise FlowException
+      raise FlowException, e.message
     end
   end
 
@@ -219,11 +222,17 @@ class Flow
     if @vol.empty?
 
       # le flow n'a pas de volume => on pousse le flow vers sa destination  et last_volume= true
-      push_vol(authentification_server_port,
-               input_flows_server_ip,
-               input_flows_server_port,
-               ftp_server_port,
-               true)
+      begin
+        push_vol(authentification_server_port,
+                 input_flows_server_ip,
+                 input_flows_server_port,
+                 ftp_server_port,
+                 true)
+      rescue Exception => e
+        error ("push flow <#{basename}> to input_flow server #{input_flows_server_ip}:#{input_flows_server_port} failed")
+        debug(e.message)
+        raise FlowException
+      end
     else
       # le flow a des volumes
 
@@ -234,12 +243,18 @@ class Flow
         count_volumes = volumes?
 
         volumes.each { |volume|
-
-          volume.push_vol(authentification_server_port,
-                          input_flows_server_ip,
-                          input_flows_server_port,
-                          ftp_server_port,
-                          count_volumes == volume.vol.to_i) }
+          begin
+            volume.push_vol(authentification_server_port,
+                            input_flows_server_ip,
+                            input_flows_server_port,
+                            ftp_server_port,
+                            count_volumes == volume.vol.to_i)
+          rescue Exception => e
+            error ("push vol <#{volume.vol.to_i}> of flow <#{basename}> to input_flow server #{input_flows_server_ip}:#{input_flows_server_port} failed")
+            debug(e.message)
+            raise FlowException
+          end
+        }
 
       else
 
@@ -247,11 +262,17 @@ class Flow
         # si lastvolume n'est pas précisé alors = false
         @vol = vol
         raise FlowException, "volume <#{@vol}> of the flow <#{basename}> do not exist" unless exist? # on verifie que le volume passé existe
-        push_vol(authentification_server_port,
-                 input_flows_server_ip,
-                 input_flows_server_port,
-                 ftp_server_port,
-                 last_volume)
+        begin
+          push_vol(authentification_server_port,
+                   input_flows_server_ip,
+                   input_flows_server_port,
+                   ftp_server_port,
+                   last_volume)
+        rescue Exception => e
+          error ("push vol <#{@vol}> of flow <#{basename}> to input_flow server #{input_flows_server_ip}:#{input_flows_server_port} failed")
+          debug(e.message)
+          raise FlowException
+        end
       end
 
     end
@@ -267,10 +288,10 @@ class Flow
 
     begin
       authen = Authentification.get_one(authentification_server_port)
-
+      Common.information("ask a new authentification")
     rescue Exception => e
-
-      alert("push flow <#{basename}> failed, because new authentification to localhost:#{authentification_server_port} failed : #{e.message}")
+      alert("ask a new authentification to localhost:#{authentification_server_port} failed")
+      debug(e.message)
       raise FlowException
     end
 
@@ -281,10 +302,10 @@ class Flow
           authen.user,
           authen.pwd,
           last_volume)
-
+      Common.information("push flow <#{basename}> to input_flow_server (#{input_flows_server_ip}:#{input_flows_server_port})")
     rescue Exception => e
       alert("push flow <#{basename}> failed, because send properties of flow to input_flow_server (#{input_flows_server_ip}:#{input_flows_server_port}) failed : #{e.message}")
-      raise Scraping_google_analyticsException
+      raise FlowException
     end
 
   end

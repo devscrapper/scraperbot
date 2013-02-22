@@ -38,11 +38,11 @@ module CalendarServer
           event = Event.new(data_event["key"],
                             data_event["cmd"]) if !data_event["key"].nil? and !data_event["cmd"].nil?
         when Policy.name
-          information("receive Policy")
+          information("receive Policy for website #{data_event["label"]}")
           debug("details policy : #{data_event}")
           event = Policy.new(data_event).to_event
         when Website.name
-          information("receive Website")
+          information("receive Website #{data_event["label"]}")
           debug("details Website : #{data_event}")
           event = Website.new(data_event).to_event
         else

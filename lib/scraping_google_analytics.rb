@@ -192,7 +192,7 @@ module Scraping_google_analytics
                              DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
                              DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
                              options,
-                             1) # percent de resultat conservé
+                             0) # percent de resultat conservé     #TODO etudier le pourcentage de resultat attendu
     rescue Exception => e
       Common.alert("Scraping traffic source for #{label} failed #{e.message}")
     end
@@ -227,7 +227,7 @@ module Scraping_google_analytics
 
 
   def Scraping_hourly_daily_distribution(label, date, profil_id_ga, website_id)
-        Common.information("Scraping hourly daily distribution for #{label} for #{date} is starting")
+    Common.information("Scraping hourly daily distribution for #{label} for #{date} is starting")
     output_flow = nil
     begin
       options={}
@@ -292,7 +292,7 @@ module Scraping_google_analytics
                              DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
                              options)
     rescue Exception => e
-      Common.alert("Scraping behaviour for #{label} failed : #{e.message}")
+      Common.alert("Scraping behaviour for #{label} failed")
     end
 
     # pousser le flow vers input_flow_server sur engine_bot
@@ -301,17 +301,19 @@ module Scraping_google_analytics
                        $input_flows_server_ip,
                        $input_flows_server_port,
                        $ftp_server_port)
+      Common.alert("push behaviour of #{label}")
     rescue Exception => e
-      Common.alert("Output_flow behaviour push to input flow server for #{label} failed #{e.message}")
+      Common.alert("push behaviour of #{label} failed")
     end
 
     begin
       options = {"path" => "/websites/#{website_id}/behaviour_querying_date",
                  "scheme" => "http"}
       Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
-      Common.information("Updating behaviour querying date for Website <#{label}>")
+      Common.information("Update behaviour querying date for #{label}")
     rescue Exception => e
-      Common.alert("Updating behaviour querying for Website <#{label}> failed : #{e.message}")
+      Common.warning("Update behaviour querying date for Website <#{label}> failed")
+      Common.debug(e.message)
     end
     Common.information("Scraping behaviour for #{label} is over")
   end
@@ -359,47 +361,31 @@ module Scraping_google_analytics
 
     begin
       client = Google_analytics.new(profil_id_ga)
-      begin
-        res = client.execute(dimensions, metrics, startDate, endDate, options)
-        p "size(res) #{res.size}"
-        res_filtered = filtering_with_filters(res, options["filters"])
-        p "size(res filtered) #{res_filtered.size}"
-        res_filtered = filtering_with_percent(res_filtered, metrics, percent)
-        p "size(res filtered) #{res_filtered.size}"
-        output_flow = to_file(res_filtered, type_flow, label, date)
-        output_flow.volumes.each { |flow| Common.information("flow <#{flow.basename}> is ready") }
-        output_flow
-      rescue Exception => e
-        if $envir == "development"
-          # copie test file to output
-          begin
-            output_flow = Flow.new(OUTPUT, type_flow, label, date, 1)
-            FileUtils.cp("#{TEST}#{type_flow}#{SEPARATOR6}#{label}.txt",
-                         output_flow.absolute_path)
-            output_flow
-          rescue Exception => e
-            Common.alert(e.message)
-            raise Scraping_google_analyticsException
-          end
-        else
-          Common.alert("Scraping to google analytics failed #{e.message}")
-          raise Scraping_google_analyticsException
-        end
-      end
+      res = client.execute(dimensions, metrics, startDate, endDate, options); p "size(res) #{res.size}"
+
+      res_filtered = filtering_with_filters(res, options["filters"]); p "size(res filtered) #{res_filtered.size}"
+
+      res_filtered = filtering_with_percent(res_filtered, metrics, percent); p "size(res filtered) #{res_filtered.size}"
+
+      output_flow = to_file(res_filtered, type_flow, label, date)
+      output_flow.volumes.each { |flow| Common.information("flow <#{flow.basename}> is ready") }
+      output_flow
+
     rescue Exception => e
       if $envir == "development"
         # copie test file to output
         begin
           output_flow = Flow.new(OUTPUT, type_flow, label, date, 1)
-          FileUtils.cp("#{TEST}#{type_flow}#{SEPARATOR6}#{label}.txt",
+          FileUtils.cp("#{TEST}#{type_flow}#{SEPARATOR6}#{label.gsub(/[_ ]/, "-")}.txt",
                        output_flow.absolute_path)
+          Common.warning("use test file <#{type_flow}#{SEPARATOR6}#{label.gsub(/[_ ]/, "-")}.txt> for #{label}")
           output_flow
         rescue Exception => e
           Common.alert(e.message)
           raise Scraping_google_analyticsException
         end
       else
-        Common.alert("connection to google analytics failed #{e.message}")
+        Common.alert("query to google analytics for #{label} failed")
         raise Scraping_google_analyticsException
       end
     end

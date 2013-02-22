@@ -26,9 +26,6 @@ module Logging
         progname += (methode.nil?) ? "_".ljust(5) : methode.to_s
         progname += " | "
         progname += (prog.nil?) ? "_".ljust(5) : prog
-
-        puts "ERROR|FATAL => #{message}"  unless $envir == "prod"
-        puts "Send mail => #{message}" if $envir == "prod"
       else
         p "code severity unknown #{severity}"
     end

@@ -134,6 +134,7 @@ module Scraping_website
         }
       end
       scraped_page.links.map! { |link| @known_url[link] } unless scraped_page.links.nil?
+
       output(scraped_page)
 
       @nbpage += 1
@@ -200,8 +201,9 @@ module Scraping_website
 
     if  @f.size > Flow::MAX_SIZE
       # informer Load_server qu'il peut telecharger le fichier
-      @push_file_spawn.notify @f, false
-      @f = @f.new_volume()
+      output_file = @f
+      @f = output_file.new_volume()
+      @push_file_spawn.notify output_file, false
     end
   end
 
