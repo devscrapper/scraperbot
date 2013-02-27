@@ -91,24 +91,24 @@ class Flow
   end
 
   def size
-    @descriptor = File.open(absolute_path, "r:UTF-8") if @descriptor.nil?
+    @descriptor = File.open(absolute_path, "r:BOM|UTF-8:-") if @descriptor.nil?
     @descriptor.size
   end
 
   def count_lines(eofline)
     raise FlowException, "Flow <#{absolute_path}> not exist" unless exist?
-    File.foreach(absolute_path, eofline, encoding: "BOM|UTF-8:-").inject(0) { |c| c+1 }
+    File.foreach(absolute_path, eofline, encoding: "r:BOM|UTF-8:-").inject(0) { |c| c+1 }
   end
 
   def descriptor
     raise FlowException, "Flow <#{absolute_path}> not exist" unless exist?
-    @descriptor = File.open(absolute_path, "BOM|UTF-8:-") if @descriptor.nil?
+    @descriptor = File.open(absolute_path, "r:BOM|UTF-8:-") if @descriptor.nil?
     @descriptor
   end
 
   def readline
     raise FlowException, "Flow <#{absolute_path}> not exist" unless exist?
-    @descriptor = File.open(absolute_path, "BOM|UTF-8:-") if @descriptor.nil?
+    @descriptor = File.open(absolute_path, "r:BOM|UTF-8:-") if @descriptor.nil?
     @descriptor.readline()
   end
 

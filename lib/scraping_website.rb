@@ -59,6 +59,7 @@ module Scraping_website
     @schemes = schemes
     @types = types
     @website_id = website_id
+    $sem = Mutex.new
 
     @start_spawn = EM.spawn {
       Scraping_website.start()
@@ -125,13 +126,14 @@ module Scraping_website
       if @count_page > @idpage or @count_page == 0
         count_link = @count_page - @idpage if @count_page > 0
         count_link = @count_page unless @count_page > 0
-        scraped_page.extract_links(@host, count_link, @schemes, @types).each { |link|
-          if @known_url[link] == 0
-            urls << [link, 1]
-            @idpage += 1
-            @known_url[link] = @idpage
-          end
-        }
+        $sem.synchronize {
+          scraped_page.extract_links(@host, count_link, @schemes, @types).each { |link|
+            if @known_url[link] == 0
+              urls << [link, 1]
+              @idpage += 1
+              @known_url[link] = @idpage
+            end
+          } }
       end
       scraped_page.links.map! { |link| @known_url[link] } unless scraped_page.links.nil?
 
