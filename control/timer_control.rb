@@ -8,11 +8,11 @@ require 'daemons'
 application = "timer"
 options = {
   :app_name   => "#{application}_server",
-  :ARGV       => [ARGV[0], "--ontop", "--","--envir=#{ARGV[1]}"],
+  :ARGV       => [ARGV[0], "--","--envir=#{ARGV[1]}"],
   :dir_mode   => :script,
   :dir        => './',
   :multiple   => false,
-  :ontop      => true,
+  :ontop      => false,
   :mode       => :load,
   :backtrace  => true,
   :monitor    => true
