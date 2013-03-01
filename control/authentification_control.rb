@@ -3,9 +3,9 @@
 require 'rubygems' # if you use RubyGems   
 require 'daemons'
 
-
+application = "authentification"
 options = {
-  :app_name   => "authentification_server",
+  :app_name   => "#{application}_server",
   :ARGV       => [ARGV[0], "--ontop", "--","--envir=#{ARGV[1]}"],
   :dir_mode   => :script,
   :dir        => './',
@@ -16,4 +16,4 @@ options = {
   :monitor    => true
 }
 
-Daemons.run(File.join(File.dirname(__FILE__), '../run/authentification_server.rb'), options)
+Daemons.run(File.join(File.dirname(__FILE__), "../run/#{application}_server.rb"), options)
