@@ -117,7 +117,7 @@ EventMachine.run {
   Signal.trap("INT") { EventMachine.stop }
   Signal.trap("TERM") { EventMachine.stop }
   Common.information("calendar server is starting")
-  EventMachine.start_server "localhost", listening_port, CalendarServer
+  EventMachine.start_server "0.0.0.0", listening_port, CalendarServer
 }
 Common.information("calendar server stopped")
 
