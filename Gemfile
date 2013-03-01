@@ -2,7 +2,8 @@
 source "http://rubygems.org"
 source "http://gems.github.com"
 
-gem 'capistrano', '2.9.0'
+gem 'capistrano'
+gem 'rvm-capistrano'
 gem "eventmachine"
 #gem 'gattica', :git => 'git://github.com/chrisle/gattica.git'
 gem 'certified'

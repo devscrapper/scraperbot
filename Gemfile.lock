@@ -71,6 +71,8 @@ GEM
     ruby-progressbar (1.0.2)
     rufus-scheduler (2.0.17)
       tzinfo (>= 0.3.23)
+    rvm-capistrano (1.2.7)
+      capistrano (>= 2.0.0)
     signet (0.4.2)
       addressable (>= 2.2.3)
       faraday (~> 0.8.1)
@@ -83,7 +85,7 @@ PLATFORMS
   x86-mingw32
 
 DEPENDENCIES
-  capistrano (= 2.9.0)
+  capistrano
   certified
   daemons
   domainatrix
@@ -98,3 +100,4 @@ DEPENDENCIES
   rest-client
   ruby-progressbar
   rufus-scheduler
+  rvm-capistrano
