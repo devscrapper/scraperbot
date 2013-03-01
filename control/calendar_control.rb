@@ -3,4 +3,4 @@
 require 'rubygems' # if you use RubyGems   
 require 'daemons'
 
-Daemons.run('calendar_server.rb')
+Daemons.run('../run/calendar_server.rb')

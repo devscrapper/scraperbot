@@ -4,4 +4,4 @@ require 'rubygems' # if you use RubyGems   
 require 'daemons'
 
 
-Daemons.run('timer_server.rb')
+Daemons.run('../run/timer_server.rb')

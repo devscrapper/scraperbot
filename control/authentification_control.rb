@@ -4,4 +4,4 @@ require 'rubygems' # if you use RubyGems   
 require 'daemons'
 
 
-Daemons.run('authentification_server.rb')
+Daemons.run('../run/authentification_server.rb')

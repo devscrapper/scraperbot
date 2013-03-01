@@ -4,5 +4,7 @@ development:
   scrape_server_port: 9151
 
 test:
+  listening_port: 9154
+  scrape_server_port: 9151
 
 production:
