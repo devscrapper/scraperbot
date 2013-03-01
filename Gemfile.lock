@@ -85,6 +85,7 @@ PLATFORMS
   x86-mingw32
 
 DEPENDENCIES
+  bundler
   capistrano
   certified
   daemons

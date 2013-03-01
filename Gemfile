@@ -5,6 +5,7 @@ source "http://gems.github.com"
 gem 'capistrano'
 gem 'rvm-capistrano'
 gem "eventmachine"
+gem "bundler"
 #gem 'gattica', :git => 'git://github.com/chrisle/gattica.git'
 gem 'certified'
 gem "em-http-request"
