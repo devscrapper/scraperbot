@@ -114,7 +114,7 @@ $sem = Mutex.new
 PARAMETERS = File.dirname(__FILE__) + "/../parameter/" + File.basename(__FILE__, ".rb") + ".yml"
 $log_file = File.dirname(__FILE__) + "/../log/" + File.basename(__FILE__, ".rb") + ".log"
 listening_port = 9153
-
+$envir="production"
 
 #--------------------------------------------------------------------------------------------------------------------
 # INPUT
@@ -127,7 +127,7 @@ begin
   params = YAML::load(File.open(PARAMETERS), "r:UTF-8")
   listening_port = params[$envir]["listening_port"] unless params[$envir]["listening_port"].nil?
 rescue Exception => e
-  Common.warning("parameters file #{PARAMETERS} is not found")
+  Common.warning("parameters file #{PARAMETERS} is not found : #{e.message}")
 end
 
 Common.information ("parameters of authentification server : ")
