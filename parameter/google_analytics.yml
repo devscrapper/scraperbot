@@ -4,5 +4,7 @@ development:
   private_key: 7b2746cb605ca688f68d25d860cb6878e93e25c9-privatekey.p12
 
 test:
+  service_account_email: 33852996685@developer.gserviceaccount.com
+  private_key: 7b2746cb605ca688f68d25d860cb6878e93e25c9-privatekey.p12
 
 production:

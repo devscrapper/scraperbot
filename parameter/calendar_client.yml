@@ -3,5 +3,6 @@ development:
   calendar_server_port: 9154
 
 test:
+  calendar_server_port: 9154
 
 production:

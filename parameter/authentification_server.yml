@@ -3,5 +3,6 @@ development:
   listening_port: 9153
 
 test:
+  listening_port: 9153
 
 production:
