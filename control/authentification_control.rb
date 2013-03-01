@@ -6,7 +6,7 @@ require 'daemons'
 
 options = {
   :app_name   => "authentification_server",
-  :ARGV       => ["start", "--ontop", "--","--envir=#{ARGV[0]}"],
+  :ARGV       => [ARGV[0], "--ontop", "--","--envir=#{ARGV[1]}"],
   :dir_mode   => :script,
   :dir        => './',
   :multiple   => false,
