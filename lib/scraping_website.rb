@@ -113,7 +113,7 @@ module Scraping_website
   end
 
   def run(urls)
-
+    #TODO tester la réentrance car uand il y a hellobay et epilation qui demarre en même temp c'est le deuxième qui sexecute 2 fois
     url = urls.shift
     count_try = url[1]
     url = url[0]
