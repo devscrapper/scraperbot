@@ -136,6 +136,7 @@ Common.information ("listening port : #{listening_port}")
 # MAIN
 #--------------------------------------------------------------------------------------------------------------------
 Common.information("environement : #{$envir}")
+#TODO remplacer passage de parametre par un fichier de param pour envir sur tous les run _server
 EventMachine.run {
   Signal.trap("INT") { EventMachine.stop }
   Signal.trap("TERM") { EventMachine.stop }
