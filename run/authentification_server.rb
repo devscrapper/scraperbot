@@ -112,6 +112,7 @@ end
 $tokens = Array.new
 $sem = Mutex.new
 PARAMETERS = File.dirname(__FILE__) + "/../parameter/" + File.basename(__FILE__, ".rb") + ".yml"
+ENVIRONMENT= File.dirname(__FILE__) + "/../parameter/environment.yml"
 $log_file = File.dirname(__FILE__) + "/../log/" + File.basename(__FILE__, ".rb") + ".log"
 listening_port = 9153
 $envir="production"
@@ -119,24 +120,24 @@ $envir="production"
 #--------------------------------------------------------------------------------------------------------------------
 # INPUT
 #--------------------------------------------------------------------------------------------------------------------
-ARGV.each { |arg|
-  $envir = arg.split("=")[1] if arg.split("=")[0] == "--envir"
-} if ARGV.size > 0
-
+begin
+  environment = YAML::load(File.open(ENVIRONMENT), "r:UTF-8")
+  $envir = environment["staging"] unless environment["staging"].nil?
+rescue Exception => e
+  Common.warning("loading parameter file #{ENVIRONMENT} failed : #{e.message}")
+end
+Common.information("environment : #{$envir}")
 begin
   params = YAML::load(File.open(PARAMETERS), "r:UTF-8")
   listening_port = params[$envir]["listening_port"] unless params[$envir]["listening_port"].nil?
 rescue Exception => e
   Common.warning("parameters file #{PARAMETERS} is not found : #{e.message}")
 end
-
 Common.information ("parameters of authentification server : ")
 Common.information ("listening port : #{listening_port}")
 #--------------------------------------------------------------------------------------------------------------------
 # MAIN
 #--------------------------------------------------------------------------------------------------------------------
-Common.information("environement : #{$envir}")
-#TODO remplacer passage de parametre par un fichier de param pour envir sur tous les run _server
 EventMachine.run {
   Signal.trap("INT") { EventMachine.stop }
   Signal.trap("TERM") { EventMachine.stop }

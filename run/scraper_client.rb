@@ -54,12 +54,17 @@ end
 scrape_server_port = 9151
 $envir = "production"
 PARAMETERS = File.dirname(__FILE__) + "/../parameter/" + File.basename(__FILE__, ".rb") + ".yml"
+ENVIRONMENT= File.dirname(__FILE__) + "/../parameter/environment.yml"
 #--------------------------------------------------------------------------------------------------------------------
 # INPUT
 #--------------------------------------------------------------------------------------------------------------------
-ARGV.each { |arg|
-  $envir = arg.split("=")[1] if arg.split("=")[0] == "envir"
-} if ARGV.size > 0
+begin
+  environment = YAML::load(File.open(ENVIRONMENT), "r:UTF-8")
+  $envir = environment["staging"] unless environment["staging"].nil?
+rescue Exception => e
+  Common.warning("loading parameter file #{ENVIRONMENT} failed : #{e.message}")
+end
+Common.information("environment : #{$envir}")
 begin
   params = YAML::load(File.open(PARAMETERS), "r:UTF-8")
   scrape_server_port = params[$envir]["scrape_server_port"] unless params[$envir]["scrape_server_port"].nil?
@@ -69,7 +74,7 @@ end
 
 Common.information("parameters of client scraper : ")
 Common.information("scrape server port : #{scrape_server_port}")
-Common.information("environement : #{$envir}")
+
 EM.run {
   EM.open_keyboard MyKeyboardHandler, scrape_server_port
 }

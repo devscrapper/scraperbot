@@ -94,7 +94,7 @@ end
 #--------------------------------------------------------------------------------------------------------------------
 $log_file = File.dirname(__FILE__) + "/../log/" + File.basename(__FILE__, ".rb") + ".log"
 PARAMETERS = File.dirname(__FILE__) + "/../parameter/" + File.basename(__FILE__, ".rb") + ".yml"
-
+ENVIRONMENT= File.dirname(__FILE__) + "/../parameter/environment.yml"
 
 $listening_port = 9151 # port d'ecoute du scrape_server
 $authentification_server_port = 9153
@@ -109,9 +109,13 @@ $envir = "production"
 #--------------------------------------------------------------------------------------------------------------------
 # INPUT
 #--------------------------------------------------------------------------------------------------------------------
-ARGV.each { |arg|
-  $envir = arg.split("=")[1] if arg.split("=")[0] == "--envir"
-} if ARGV.size > 0
+begin
+  environment = YAML::load(File.open(ENVIRONMENT), "r:UTF-8")
+  $envir = environment["staging"] unless environment["staging"].nil?
+rescue Exception => e
+  Common.warning("loading parameter file #{ENVIRONMENT} failed : #{e.message}")
+end
+Common.information("environment : #{$envir}")
 
 begin
   params = YAML::load(File.open(PARAMETERS), "r:UTF-8")

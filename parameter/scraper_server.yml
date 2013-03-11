@@ -16,9 +16,9 @@ test:
   ftp_server_port: 9152
   authentification_server_port: 9153
   calendar_server_port: 9154
-  input_flows_server_ip: 192.168.1.23
+  input_flows_server_ip: 192.168.1.16
   input_flows_server_port: 9105
-  statupweb_server_ip: 192.168.1.23
+  statupweb_server_ip: 192.168.1.11
   statupweb_server_port: 3000
 
 production:

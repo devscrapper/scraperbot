@@ -12,6 +12,7 @@ class FTPDriver
   OUTPUT = File.dirname(__FILE__) + "/../output"
   @@log_file = File.dirname(__FILE__) + "/../log/" + File.basename(__FILE__, ".rb") + ".log"
   PARAMETERS = File.dirname(__FILE__) + "/../parameter/" + File.basename(__FILE__, ".rb") + ".yml"
+  ENVIRONMENT= File.dirname(__FILE__) + "/../parameter/environment.yml"
   attr :user, :pwd, :authentification_server_port, :envir
 
   def initialize(driver_args=nil)
@@ -96,6 +97,13 @@ class FTPDriver
 
   private
   def load_parameters()
+    begin
+      environment = YAML::load(File.open(ENVIRONMENT), "r:UTF-8")
+      @envir = environment["staging"] unless environment["staging"].nil?
+    rescue Exception => e
+      Common.warning("loading parameter file #{ENVIRONMENT} failed : #{e.message}")
+    end
+    Common.information("environment : #{@envir}")
     begin
       params = YAML::load(File.open(PARAMETERS), "r:UTF-8")
       @authentification_server_port = params[@envir]["authentification_server_port"] unless params[@envir]["authentification_server_port"].nil?

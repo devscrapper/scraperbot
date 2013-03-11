@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + "/../run/driver_em_ftpd.rb"
 # configure the server
-driver_args "development"
+#driver_args "development"
 driver     FTPDriver
 #daemonise true
 port 9152

@@ -6,13 +6,18 @@ require File.dirname(__FILE__) + '/../lib/common'
 require File.dirname(__FILE__) + '/../model/communication'
 
 PARAMETERS = File.dirname(__FILE__) + "/../parameter/" + File.basename(__FILE__, ".rb") + ".yml"
+ENVIRONMENT= File.dirname(__FILE__) + "/../parameter/environment.yml"
 $envir = "production"
 #--------------------------------------------------------------------------------------------------------------------
 # INPUT
 #--------------------------------------------------------------------------------------------------------------------
-ARGV.each { |arg|
-  $envir = arg.split("=")[1] if arg.split("=")[0] == "--envir"
-} if ARGV.size > 0
+begin
+  environment = YAML::load(File.open(ENVIRONMENT), "r:UTF-8")
+  $envir = environment["staging"] unless environment["staging"].nil?
+rescue Exception => e
+  Common.warning("loading parameter file #{ENVIRONMENT} failed : #{e.message}")
+end
+Common.information("environment : #{$envir}")
 begin
   params = YAML::load(File.open(PARAMETERS), "r:UTF8")
   periodicity = params[$envir]["periodicity"] unless params[$envir]["periodicity"].nil?
