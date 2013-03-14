@@ -22,10 +22,11 @@ module Logging
 
   class Log
     DIR_LOG =  File.dirname(__FILE__) + "/../log"
-    attr :logger,
-         :staging,
+    attr_reader :logger
+     attr    :staging,
          :debugging,
          :id_file
+    alias :a_log :logger
 
     def initialize(obj, opts = {})
       @staging = opts.getopt(:staging, STAGING_PROD)
@@ -66,7 +67,7 @@ module Logging
       if @debugging
         @logger.level = :debug
         @logger.trace = true
-        log_debug_file = Logging::Appenders.rolling_file(File.join(DIR_LOG, "#{@id_file}.deb"), {:age => :daily, :keep => 7, :roll_by => :date, :layout => Logging.layouts.pattern(:pattern => '[%d] %-5l %-16c %-32M %-5L %x{,} :  %m \n')})
+        log_debug_file = Logging::Appenders.rolling_file(File.join(DIR_LOG, "#{@id_file}.deb"), {:age => :daily, :keep => 7, :roll_by => :date, :layout => Logging.layouts.pattern(:pattern => '[%d] %-5l %-16c %-32M %-5L %x{,} :  %m %F\n')})
         yml_debug_file = Logging::Appenders.rolling_file(File.join(DIR_LOG, "#{@id_file}.yml"), {:age => :daily, :keep => 7, :roll_by => :date, :layout => Logging.layouts.yaml})
         @logger.add_appenders([log_debug_file, yml_debug_file])
 
@@ -98,24 +99,24 @@ module Logging
       @logger.info "logging is available"
     end
 
-    def info msg
-      @logger.info msg;
-    end
-
-    def debug msg
-      @logger.debug msg;
-    end
-
-    def warn msg
-      @logger.warn msg;
-    end
-
-    def error msg
-      @logger.error msg;
-    end
-
-    def fatal msg
-      @logger.fatal msg;
-    end
+    #def info msg
+    #  @logger.info msg;
+    #end
+    #
+    #def debug msg
+    #  @logger.debug msg;
+    #end
+    #
+    #def warn msg
+    #  @logger.warn msg;
+    #end
+    #
+    #def error msg
+    #  @logger.error msg;
+    #end
+    #
+    #def fatal msg
+    #  @logger.fatal msg;
+    #end
   end
 end
