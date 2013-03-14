@@ -1,41 +1,121 @@
 #!/usr/bin/env ruby -w
 # encoding: UTF-8
-#------------------------------------------------------------------------------------------
-# Pre requis gem
-#------------------------------------------------------------------------------------------
+require "logging"
 
 module Logging
-#------------------------------------------------------------------------------------------
-# get :
-#------------------------------------------------------------------------------------------
+  #tableau d'organisation des logs
+  #--------------------------------------------------------------
+  #         | DEBUGGING                 |    NOT DEBUGGING
+  #--------------------------------------------------------------
+  #         | PROD/TEST   |  DEV        |   PROD/TEST   |   DEV
+  #---------------------------------------------------------------
+  #> :fatal | email       | no          |   email       | no
+  #---------------------------------------------------------------
+  #> :info  | syslog,     | stdout      |   syslog,     | stdout
+  #         |             |             |   rollfile    | rollfile
+  #---------------------------------------------------------------
+  #> :debug | rollfile    | rollfile    |               |
+  #--------------------------------------------------------------
+  STAGING_DEV = "development"
+  STAGING_TEST = "test"
+  STAGING_PROD = "production"
 
-#Logging.send(Logger::DEBUG, "debug",$0 )
-#Logging.send(Logger::INFO, "info", $0)
-#Logging.send(Logger::WARN, "warn", "tu_page.rb")
-#Logging.send(Logger::ERROR, "error", "tu_page.rb")
-#Logging.send(Logger::FATAL, "fatal", "tu_page.rb")
-  def send(log_file, severity, message, line=nil, methode=nil, prog=nil)
-    l = Logger.new(log_file, 'daily')
-    case severity
-      when Logger::DEBUG
-      when Logger::INFO
-      when Logger::WARN
-      when Logger::ERROR, Logger::FATAL
-        progname = (line.nil?) ? "_".ljust(5) : line.to_s
-        progname += " | "
-        progname += (methode.nil?) ? "_".ljust(5) : methode.to_s
-        progname += " | "
-        progname += (prog.nil?) ? "_".ljust(5) : prog
+  class Log
+    DIR_LOG =  File.dirname(__FILE__) + "/../log"
+    attr :logger,
+         :staging,
+         :debugging,
+         :id_file
+
+    def initialize(obj, opts = {})
+      @staging = opts.getopt(:staging, STAGING_PROD)
+      @debugging = opts.getopt(:debugging, false)
+      if obj.class.name == "Object"
+        @id_file = opts.getopt(:id_file)
+        @logger = Logging.logger["root"]
       else
-        p "code severity unknown #{severity}"
+        @id_file = obj.class.name
+        @logger = Logging.logger[obj]
+        @logger.additive = true
+      end
+
+
+      #TODO terminer l'appender syslog
+      #syslog = Logging::appenders.syslog(obj.class.name)
+
+      #TODO definir le parametrage de l'appender mail
+      email = Logging::appenders.email('email',
+                                       :from => "server@example.com",
+                                       :to => "developers@example.com",
+                                       :subject => "Application Error []",
+                                       :address => "smtp.google.com",
+                                       :port => 443,
+                                       :domain => "google.com",
+                                       :user_name => "example",
+                                       :password => "12345",
+                                       :authentication => :plain,
+                                       :enable_starttls_auto => true,
+                                       :auto_flushing => 200, # send an email after 200 messages have been buffered
+                                       :flush_period => 60, # send an email after one minute
+                                       :level => :fatal # only process log events that are "error" or "fatal"
+      )
+      rollfile = Logging::Appenders.rolling_file(File.join(DIR_LOG, "#{@id_file}.log"), {:age => :daily, :keep => 7, :roll_by => :date}) if obj.class.name == "Object" and !@debugging
+      stdout = Logging::Appenders.stdout(:level => :info)
+
+
+      if @debugging
+        @logger.level = :debug
+        @logger.trace = true
+        log_debug_file = Logging::Appenders.rolling_file(File.join(DIR_LOG, "#{@id_file}.deb"), {:age => :daily, :keep => 7, :roll_by => :date, :layout => Logging.layouts.pattern(:pattern => '[%d] %-5l %-16c %-32M %-5L %x{,} :  %m \n')})
+        yml_debug_file = Logging::Appenders.rolling_file(File.join(DIR_LOG, "#{@id_file}.yml"), {:age => :daily, :keep => 7, :roll_by => :date, :layout => Logging.layouts.yaml})
+        @logger.add_appenders([log_debug_file, yml_debug_file])
+
+        case @staging
+          when STAGING_PROD, STAGING_TEST
+            @logger.add_appenders(email)
+          #TODO ajouter l'appender syslog
+          #@logger.add_appenders(syslog)
+          when STAGING_DEV
+            @logger.add_appenders(stdout)
+          else
+            raise ArgumentError, "staging unknown <#{@staging}>"
+        end
+
+      else
+        @logger.level = :info
+        case @staging
+          when STAGING_PROD, STAGING_TEST
+            @logger.add_appenders(email)
+            # @logger.add_appenders(syslog)
+            @logger.add_appenders(rollfile) unless rollfile.nil?
+          when STAGING_DEV
+            @logger.add_appenders(stdout)
+            @logger.add_appenders(rollfile) unless rollfile.nil?
+          else
+            raise ArgumentError, "staging unknown <#{@staging}>"
+        end
+      end
+      @logger.info "logging is available"
     end
-    l.datetime_format = "%Y-%m-%d %H:%M:%S"
-    l.formatter = proc { |severity, datetime, progname, msg| "#{datetime} | #{severity.ljust(5)} | #{message.ljust(80)} | #{progname}\n" }
-    l.add(severity, message.force_encoding("UTF-8"), progname)
-    l.close
+
+    def info msg
+      @logger.info msg;
+    end
+
+    def debug msg
+      @logger.debug msg;
+    end
+
+    def warn msg
+      @logger.warn msg;
+    end
+
+    def error msg
+      @logger.error msg;
+    end
+
+    def fatal msg
+      @logger.fatal msg;
+    end
   end
-
-
-  module_function :send
-
 end

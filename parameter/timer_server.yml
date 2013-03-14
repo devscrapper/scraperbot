@@ -2,9 +2,9 @@
 development:
   calendar_server_port: 9154
   periodicity: "0 0 * * * 1-7 Europe/Paris"
-
+  debugging: true
 test:
   calendar_server_port: 9154
   periodicity: "0 0 * * * 1-7 Europe/Paris"
-
+  debugging: false
 production:
