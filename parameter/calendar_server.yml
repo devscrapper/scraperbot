@@ -2,9 +2,15 @@
 development:
   listening_port: 9154
   scrape_server_port: 9151
-
+  periodicity: "0 0 * * * 1-7 Europe/Paris"
+  debugging: true
 test:
   listening_port: 9154
   scrape_server_port: 9151
-
+  periodicity: "0 0 * * * 1-7 Europe/Paris"
+  debugging: false
 production:
+  listening_port: 9154
+  scrape_server_port: 9151
+  periodicity: "0 0 * * * 1-7 Europe/Paris"
+  debugging: false

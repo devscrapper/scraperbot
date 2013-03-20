@@ -1,9 +1,7 @@
 require 'rubygems'
 require 'eventmachine'
-require File.dirname(__FILE__) + '/../model/communication.rb'
-require File.dirname(__FILE__) + '/../lib/common.rb'
-require File.dirname(__FILE__) + '/../model/event.rb'
-require File.dirname(__FILE__) + '/../model/events.rb'
+require_relative '../lib/logging'
+require_relative '../model/planning/events.rb'
 
 module MyKeyboardHandler
   attr :events,
@@ -12,7 +10,7 @@ module MyKeyboardHandler
        :start_hour,
        :period
   include EM::Protocols::LineText2
-
+  include Planning
   def initialize(calendar_server_port)
     @calendar_server_port = calendar_server_port
     @events = Events.new()
@@ -95,6 +93,7 @@ module MyKeyboardHandler
                   "data" => {"date" => @start_date, "hour" => hour}}
 
           Information.new(data).send_local(@calendar_server_port)
+          sleep 1
         }
       when "h"
         now = Time.local(Date.today.year,
@@ -146,7 +145,8 @@ module MyKeyboardHandler
 end
 
 calendar_server_port = 9154
-$envir = "production"
+$staging = "production"
+debugging = false
 PARAMETERS = File.dirname(__FILE__) + "/../parameter/" + File.basename(__FILE__, ".rb") + ".yml"
 ENVIRONMENT= File.dirname(__FILE__) + "/../parameter/environment.yml"
 #--------------------------------------------------------------------------------------------------------------------
@@ -154,21 +154,25 @@ ENVIRONMENT= File.dirname(__FILE__) + "/../parameter/environment.yml"
 #--------------------------------------------------------------------------------------------------------------------
 begin
   environment = YAML::load(File.open(ENVIRONMENT), "r:UTF-8")
-  $envir = environment["staging"] unless environment["staging"].nil?
+  $staging = environment["staging"] unless environment["staging"].nil?
 rescue Exception => e
-  Common.warning("loading parameter file #{ENVIRONMENT} failed : #{e.message}")
+  STDERR << "loading parameter file #{ENVIRONMENT} failed : #{e.message}"
 end
-Common.information("environment : #{$envir}")
+
 
 begin
   params = YAML::load(File.open(PARAMETERS), "r:UTF-8")
-  calendar_server_port = params[$envir]["calendar_server_port"] unless params[$envir]["calendar_server_port"].nil?
+  calendar_server_port = params[$staging]["calendar_server_port"] unless params[$staging]["calendar_server_port"].nil?
+  debugging = params[$staging]["debugging"] unless params[$staging]["debugging"].nil?
 rescue Exception => e
-  Common.alert("parameters file #{PARAMETERS} is not found")
+  STDERR << "loading parameters file #{PARAMETERS} failed : #{e.message}"
 end
+logger = Logging::Log.new(self, :staging => $staging, :id_file => File.basename(__FILE__, ".rb"), :debugging => debugging)
 
-Common.information("parameters of client calendar : ")
-Common.information("scrape server port : #{calendar_server_port}")
+Logging::show_configuration
+logger.a_log.info "parameters of calendar client :"
+logger.a_log.info "calendar server port : #{calendar_server_port}"
+
 
 EM.run {
   EM.open_keyboard MyKeyboardHandler, calendar_server_port

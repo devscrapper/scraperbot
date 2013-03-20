@@ -1,11 +1,9 @@
 require 'yaml'
 require 'socket'
 require 'rest-client'
-require File.dirname(__FILE__) + '/../lib/common'
-
 
 class Communication
-  include Common
+
   attr :data_go_yaml,
        :data_go_hash,
        :data_go
@@ -30,8 +28,7 @@ class Communication
       s.puts @data_go_yaml
       local_port, local_ip = Socket.unpack_sockaddr_in(s.getsockname)
     rescue Exception => e
-      Common.debug("cannot send data <#{@data_go_yaml}> to <#{remote_ip}:#{remote_port}> : #{e.message}")
-      raise CommunicationException
+      raise CommunicationException, "cannot send data to <#{remote_ip}:#{remote_port}> because #{e.message}"
     end
   end
 
@@ -41,8 +38,7 @@ class Communication
     begin
       RestClient.put "http://#{remote_ip}:#{remote_port}#{path}", @data_go
     rescue Exception => e
-      Common.debug("cannot send data #{@data_go} to <#{remote_ip}:#{remote_port}> : #{e.message}")
-      raise CommunicationException
+      raise CommunicationException, "cannot send data to <#{remote_ip}:#{remote_port}> because #{e.message}"
     end
   end
 end
@@ -66,7 +62,7 @@ class Information < Communication
       send_data_to_TCPSocket_server(remote_ip, remote_port) if options.nil?
       send_data_to_http_server(remote_ip, remote_port, options["path"]) if !options.nil? and options["scheme"] == "http"
     rescue Exception => e
-      raise InformationException, e.message
+      raise InformationException, "cannot send information to <#{remote_ip}:#{remote_port}> because #{e.message}"
     end
   end
 end
@@ -86,12 +82,8 @@ class Question < Communication
       s = TCPSocket.new remote_ip, remote_port
       s.puts @data_go_yaml
       local_port, local_ip = Socket.unpack_sockaddr_in(s.getsockname)
-
     rescue Exception => e
-
-      Common.debug("ask Question <#{@data_go}> to <#{remote_ip}:#{remote_port}> failed #{}")
-      Common.debug(e.message)
-      raise QuestionException, e.message
+      raise QuestionException,  "cannot ask question to <#{remote_ip}:#{remote_port}> because #{e.message}"
     end
     begin
       @data_back = ""
@@ -99,12 +91,10 @@ class Question < Communication
         @data_back += "#{line}"
       end
       local_port, local_ip = Socket.unpack_sockaddr_in(s.getsockname)
-      Common.debug("Response received <#{@data_back}> from <#{remote_ip}:#{remote_port}>")
       s.close
     rescue Exception => e
       s.close
-      Common.alert("Response not received from <#{remote_ip}:#{remote_port}> to <#{local_ip}:#{local_port}> : #{e.message}")
-      raise QuestionException, e.message
+      raise QuestionException,  "cannot receive response  from  <#{remote_ip}:#{remote_port}> because #{e.message}"
     end
     YAML::load @data_back
   end
