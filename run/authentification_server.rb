@@ -1,8 +1,8 @@
 require 'rubygems' # if you use RubyGems
 require 'eventmachine'
-require 'json'
-require 'json/ext'
-require 'digest/sha2'
+#require 'json'
+#require 'json/ext'
+#require 'digest/sha2'
 require 'yaml'
 
 require_relative '../lib/logging'

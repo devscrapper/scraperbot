@@ -1,10 +1,7 @@
 # coding: utf-8
-#require 'socket'
-#require 'json'
-#require 'json/ext'
 require_relative '../lib/logging'
 require_relative '../model/authentification'
-#require 'yaml'
+require 'yaml'
 
 class FTPDriver
   OUTPUT = File.dirname(__FILE__) + "/../output"
