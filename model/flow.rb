@@ -1,11 +1,12 @@
 require 'socket'
-require File.dirname(__FILE__) + '/../lib/common'
+
 require File.dirname(__FILE__) + '/../model/communication'
+require_relative '../lib/logging'
 
 class Flow
   class FlowException < StandardError;
   end
-  include Common
+
   MAX_SIZE = 1000000 # taille max d'un volume
   SEPARATOR = "_" # separateur entre elemet composant (type_flow, label, date, vol) le nom du volume (basename)
   ARCHIVE = File.dirname(__FILE__) + "/../archive/" #localisation du repertoire d'archive
@@ -16,7 +17,8 @@ class Flow
        :label,
        :date,
        :vol,
-       :ext
+       :ext,
+       :logger
 
   #TODO publier la version vers les autres  applications
   #----------------------------------------------------------------------------------------------------------------
@@ -53,7 +55,19 @@ class Flow
     @date = date unless date.is_a?(Date)
     @vol = vol.to_s unless vol.nil?
     @ext = ext
+    @logger = Logging::Log.new(self, :staging => $staging, :debugging => $debugging)
+    if  !(@dir && @type_flow && @label && @date && @ext) and $debugging
+      @logger.an_event.debug "dir <#{dir}>"
+      @logger.an_event.debug "type_flow <#{type_flow}>"
+      @logger.an_event.debug "label <#{label}>"
+      @logger.an_event.debug "date <#{date}>"
+      @logger.an_event.debug "vol <#{vol}>"
+      @logger.an_event.debug "ext <#{ext}>"
+      @logger.an_event.debug "details flow <#{self.to_s}>"
+
+    end
     raise FlowException, "Flow not initialize" unless @dir && @type_flow && @label && @date && @ext
+
   end
 
   def vol=(vol)
@@ -73,7 +87,6 @@ class Flow
 
 
   def write(data)
-    Common.debug("WRITE basename #{basename}")
     @descriptor = File.open(absolute_path, "w:UTF-8") if @descriptor.nil?
     @descriptor.sync = true
     @descriptor.write(data)
@@ -85,7 +98,6 @@ class Flow
   end
 
   def close
-    Common.debug("CLOSE basename #{basename}")
     @descriptor.close unless @descriptor.nil?
     @descriptor = nil
   end
@@ -193,7 +205,10 @@ class Flow
     }
     begin
       Information.new(data).send_to(ip_to, port_to)
+      @logger.an_event.debug "send properties flow <#{basename}> to #{ip_to}:#{port_to}"
     rescue Exception => e
+      @logger.an_event.error "cannot send properties flow <#{basename}> to #{ip_to}:#{port_to}"
+      @logger.an_event.debug e
       raise FlowException, e.message
     end
   end
@@ -206,8 +221,10 @@ class Flow
       ftp.gettextfile(basename, absolute_path)
       ftp.delete(basename)
       ftp.close
+      @logger.an_event.debug "get flow <#{basename}> from #{ip_from}:#{port_from}"
     rescue Exception => e
-      alert("get flow <#{basename}> from #{ip_from}:#{port_from} failed : #{e.message}")
+      @logger.an_event.error "cannnot get flow <#{basename}> from #{ip_from}:#{port_from}"
+      @logger.an_event.debug e
       raise FlowException, e.message
     end
   end
@@ -228,9 +245,10 @@ class Flow
                  input_flows_server_port,
                  ftp_server_port,
                  true)
+        @logger.an_event.debug "push flow <#{basename}> to input_flow server #{input_flows_server_ip}:#{input_flows_server_port}"
       rescue Exception => e
-        error ("push flow <#{basename}> to input_flow server #{input_flows_server_ip}:#{input_flows_server_port} failed")
-        debug(e.message)
+        @logger.an_event.error "cannot push flow <#{basename}> to input_flow server #{input_flows_server_ip}:#{input_flows_server_port}"
+        @logger.an_event.debug e
         raise FlowException
       end
     else
@@ -249,9 +267,10 @@ class Flow
                             input_flows_server_port,
                             ftp_server_port,
                             count_volumes == volume.vol.to_i)
+            @logger.an_event.debug "push vol <#{volume.vol.to_i}> of flow <#{basename}> to input_flow server #{input_flows_server_ip}:#{input_flows_server_port}"
           rescue Exception => e
-            error ("push vol <#{volume.vol.to_i}> of flow <#{basename}> to input_flow server #{input_flows_server_ip}:#{input_flows_server_port} failed")
-            debug(e.message)
+            @logger.an_event.error "cannot push vol <#{volume.vol.to_i}> of flow <#{basename}> to input_flow server #{input_flows_server_ip}:#{input_flows_server_port}"
+            @logger.an_event.debug e
             raise FlowException
           end
         }
@@ -269,8 +288,8 @@ class Flow
                    ftp_server_port,
                    last_volume)
         rescue Exception => e
-          error ("push vol <#{@vol}> of flow <#{basename}> to input_flow server #{input_flows_server_ip}:#{input_flows_server_port} failed")
-          debug(e.message)
+          @logger.an_event.error "push vol <#{@vol}> of flow <#{basename}> to input_flow server #{input_flows_server_ip}:#{input_flows_server_port} failed"
+          @logger.an_event.debug e
           raise FlowException
         end
       end
@@ -288,10 +307,10 @@ class Flow
 
     begin
       authen = Authentification.get_one(authentification_server_port)
-      Common.information("ask a new authentification")
+      @logger.an_event.info "ask a new authentification"
     rescue Exception => e
-      alert("ask a new authentification to localhost:#{authentification_server_port} failed")
-      debug(e.message)
+      @logger.an_event.error "cannot ask a new authentification to localhost:#{authentification_server_port}"
+      @logger.an_event.debug e
       raise FlowException
     end
 
@@ -302,9 +321,9 @@ class Flow
           authen.user,
           authen.pwd,
           last_volume)
-      Common.information("push flow <#{basename}> to input_flow_server (#{input_flows_server_ip}:#{input_flows_server_port})")
+
     rescue Exception => e
-      alert("push flow <#{basename}> failed, because send properties of flow to input_flow_server (#{input_flows_server_ip}:#{input_flows_server_port}) failed : #{e.message}")
+
       raise FlowException
     end
 

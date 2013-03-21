@@ -9,6 +9,7 @@ development:
   input_flows_server_port: 9105
   statupweb_server_ip: localhost
   statupweb_server_port: 3000
+  debugging: true
 
 test:
   listening_port: 9151
@@ -20,5 +21,6 @@ test:
   input_flows_server_port: 9105
   statupweb_server_ip: 192.168.1.11
   statupweb_server_port: 3000
+  debugging:  false
 
 production:

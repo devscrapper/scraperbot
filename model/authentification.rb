@@ -1,5 +1,4 @@
-require File.dirname(__FILE__) + '/../lib/common'
-require File.dirname(__FILE__) + '/../model/communication'
+require_relative 'communication'
 
 class Authentification
   class AuthentificationException < StandardError;

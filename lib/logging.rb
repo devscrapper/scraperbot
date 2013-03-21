@@ -62,7 +62,7 @@ module Logging
       param_3(opts) if @debugging and [STAGING_DEV].include?(@staging) and @main
       param_6(opts) if !@debugging and [STAGING_DEV].include?(@staging) and @main
 
-      @logger.info "logging is available"
+      @logger.debug "logging is available"
     end
 
     def ndc(args)

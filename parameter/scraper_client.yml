@@ -1,8 +1,8 @@
 
 development:
-  scrape_server_port: 9151
+    debugging: true
 
 test:
-  scrape_server_port: 9151
+  debugging: false
 
 production:

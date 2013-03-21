@@ -1,102 +1,16 @@
-require 'rubygems'
-require 'eventmachine'
-require 'json'
-require 'json/ext'
-require 'digest/sha2'
+#!/usr/bin/env ruby -w
+# encoding: UTF-8
 require 'yaml'
-require File.dirname(__FILE__) + '/../lib/logging'
-require 'logger'
-require 'net/ftp'
-require File.dirname(__FILE__) + '/../lib/scraping_google_analytics'
-require File.dirname(__FILE__) + '/../lib/scraping_website'
-require File.dirname(__FILE__) + '/../lib/common'
-require File.dirname(__FILE__) + '/../model/google_analytics'
-
-module ScrapeServer
-  include Common
-  INPUT = File.dirname(__FILE__) + "/../input/"
-  TMP = File.dirname(__FILE__) + "/../tmp/"
-
-
-  def receive_data param
-    debug ("data receive : #{param}")
-    close_connection
-    begin
-      Thread.new { execute_task(YAML::load(param)) }
-    rescue Exception => e
-      warning("data receive #{param} : #{e.message}")
-    end
-  end
-
-  def execute_task(data)
-    task = data["cmd"]
-    case task
-      when "Scraping_behaviour"
-        label = data["label"]
-        date_building = data["date_building"]
-        profil_id_ga = data["data"]["profil_id_ga"]
-        website_id = data["data"]["website_id"]
-        Scraping_google_analytics.Scraping_behaviour(label, date_building, profil_id_ga, website_id)
-
-      when "Scraping_hourly_daily_distribution"
-        label = data["label"]
-        date_building = data["date_building"]
-        profil_id_ga = data["data"]["profil_id_ga"]
-        website_id = data["data"]["website_id"]
-        Scraping_google_analytics.Scraping_hourly_daily_distribution(label, date_building, profil_id_ga, website_id)
-
-      when "Scraping_traffic_source_landing_page"
-        label = data["label"]
-        date_building = data["date_building"]
-        profil_id_ga = data["data"]["profil_id_ga"]
-        website_id = data["data"]["website_id"]
-        Scraping_google_analytics.Scraping_traffic_source_landing_page(label, date_building, profil_id_ga, website_id)
-
-      when "Scraping_device_platform_resolution"
-        label = data["label"]
-        date_building = data["date_building"]
-        profil_id_ga = data["data"]["profil_id_ga"]
-        website_id = data["data"]["website_id"]
-        Scraping_google_analytics.Scraping_device_platform_resolution(label, date_building, profil_id_ga, website_id)
-
-      when "Scraping_device_platform_plugin"
-        label = data["label"]
-        date_building = data["date_building"]
-        profil_id_ga = data["data"]["profil_id_ga"]
-        website_id = data["data"]["website_id"]
-        Scraping_google_analytics.Scraping_device_platform_plugin(label, date_building, profil_id_ga, website_id)
-
-
-      when "Scraping_website"
-        label = data["label"]
-        date_building = data["date_building"]
-        url_root = data["data"]["url_root"]
-        count_page = data["data"]["count_page"]
-        schemes = data["data"]["schemes"].split
-        types = data["data"]["types"].split
-        website_id = data["data"]["website_id"]
-        Scraping_website.Scraping_pages(label, date_building, url_root, count_page, schemes, types, website_id)
-
-
-      when "exit"
-        EventMachine.stop
-      else
-        port, ip = Socket.unpack_sockaddr_in(get_peername)
-        alert("unknown action : #{data["cmd"]} from  #{ip}:#{port}")
-    end
-  end
-
-end
+require_relative '../lib/logging'
+require_relative '../model/tasking/task_connection'
 
 
 #--------------------------------------------------------------------------------------------------------------------
 # INIT
 #--------------------------------------------------------------------------------------------------------------------
-$log_file = File.dirname(__FILE__) + "/../log/" + File.basename(__FILE__, ".rb") + ".log"
 PARAMETERS = File.dirname(__FILE__) + "/../parameter/" + File.basename(__FILE__, ".rb") + ".yml"
 ENVIRONMENT= File.dirname(__FILE__) + "/../parameter/environment.yml"
-
-$listening_port = 9151 # port d'ecoute du scrape_server
+listening_port = 9151 # port d'ecoute du scrape_server
 $authentification_server_port = 9153
 $calendar_server_port=9154
 $ftp_server_port = 9152
@@ -104,61 +18,58 @@ $input_flows_server_ip = "localhost"
 $input_flows_server_port = 9101
 $statupweb_server_ip = "localhost"
 $statupweb_server_port = 3000
-$envir = "production"
-
+$staging = "production"
+$debugging = false
 #--------------------------------------------------------------------------------------------------------------------
 # INPUT
 #--------------------------------------------------------------------------------------------------------------------
 begin
   environment = YAML::load(File.open(ENVIRONMENT), "r:UTF-8")
-  $envir = environment["staging"] unless environment["staging"].nil?
+  $staging = environment["staging"] unless environment["staging"].nil?
 rescue Exception => e
-  Common.warning("loading parameter file #{ENVIRONMENT} failed : #{e.message}")
+  STDERR << "loading parameter file #{ENVIRONMENT} failed : #{e.message}"
 end
-Common.information("environment : #{$envir}")
 
 begin
   params = YAML::load(File.open(PARAMETERS), "r:UTF-8")
-  $listening_port = params[$envir]["listening_port"] unless params[$envir]["listening_port"].nil?
-  $calendar_server_port = params[$envir]["calendar_server_port"] unless params[$envir]["calendar_server_port"].nil?
-  $authentification_server_port = params[$envir]["authentification_server_port"] unless params[$envir]["authentification_server_port"].nil?
-  $input_flows_server_ip = params[$envir]["input_flows_server_ip"] unless params[$envir]["input_flows_server_ip"].nil?
-  $input_flows_server_port = params[$envir]["input_flows_server_port"] unless params[$envir]["input_flows_server_port"].nil?
-  $statupweb_server_ip = params[$envir]["statupweb_server_ip"] unless params[$envir]["statupweb_server_ip"].nil?
-  $statupweb_server_port = params[$envir]["statupweb_server_port"] unless params[$envir]["statupweb_server_port"].nil?
-  $ftp_server_port = params[$envir]["ftp_server_port"] unless params[$envir]["ftp_server_port"].nil?
+  listening_port = params[$staging]["listening_port"] unless params[$staging]["listening_port"].nil?
+  $calendar_server_port = params[$staging]["calendar_server_port"] unless params[$staging]["calendar_server_port"].nil?
+  $authentification_server_port = params[$staging]["authentification_server_port"] unless params[$staging]["authentification_server_port"].nil?
+  $input_flows_server_ip = params[$staging]["input_flows_server_ip"] unless params[$staging]["input_flows_server_ip"].nil?
+  $input_flows_server_port = params[$staging]["input_flows_server_port"] unless params[$staging]["input_flows_server_port"].nil?
+  $statupweb_server_ip = params[$staging]["statupweb_server_ip"] unless params[$staging]["statupweb_server_ip"].nil?
+  $statupweb_server_port = params[$staging]["statupweb_server_port"] unless params[$staging]["statupweb_server_port"].nil?
+  $ftp_server_port = params[$staging]["ftp_server_port"] unless params[$staging]["ftp_server_port"].nil?
+  $debugging = params[$staging]["debugging"] unless params[$staging]["debugging"].nil?
 rescue Exception => e
-  p e.message
-  Logging.send($log_file, Logger::INFO, "parameters file #{PARAMETERS} is not found")
+  STDERR << "loading parameters file #{PARAMETERS} failed : #{e.message}"
 end
 
-Common.information("parameters of scrape server : ")
-Common.information("listening port : #{$listening_port}")
-Common.information("calendar server port : #{$calendar_server_port}")
-Common.information("authentification server port : #{$authentification_server_port}")
-Common.information("ftp_server_port : #{$ftp_server_port}")
-Common.information("input_flows server ip : #{$input_flows_server_ip}")
-Common.information("input_flows server port : #{$input_flows_server_port}")
-Common.information("statupweb server ip : #{$statupweb_server_ip}")
-Common.information("statupweb server port : #{$statupweb_server_port}")
+logger = Logging::Log.new(self, :staging => $staging, :id_file => File.basename(__FILE__, ".rb"), :debugging => $debugging)
 
+Logging::show_configuration
+logger.a_log.info "parameters of calendar server :"
+logger.a_log.info "listening port : #{listening_port}"
+logger.a_log.info "calendar server port : #{$calendar_server_port}"
+logger.a_log.info "input flows server : #{$input_flows_server_ip}:#{$input_flows_server_port}"
+logger.a_log.info "statupweb : #{$statupweb_server_ip}:#{$statupweb_server_port}"
+logger.a_log.info "ftp listening port : #{$ftp_server_port}"
+logger.a_log.info "debugging : #{$debugging}"
+logger.a_log.info "staging : #{$staging}"
 
-
+include Tasking
 #--------------------------------------------------------------------------------------------------------------------
 # MAIN
 #--------------------------------------------------------------------------------------------------------------------
-Common.information("environement : #{$envir}")
-# démarrage du server
-
-
 EventMachine.run {
   Signal.trap("INT") { EventMachine.stop }
   Signal.trap("TERM") { EventMachine.stop }
-  Common.information ("scrape server is starting")
-  EventMachine.start_server "localhost", $listening_port, ScrapeServer
-}
-Common.information ("scrape server stopped")
 
-#--------------------------------------------------------------------------------------------------------------------
-# END
-#--------------------------------------------------------------------------------------------------------------------
+
+
+  logger.a_log.info "scraper server is running"
+  EventMachine.start_server "localhost", listening_port, TaskConnection, logger
+}
+logger.a_log.info "calendar server stopped"
+
+

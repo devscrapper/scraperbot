@@ -1,8 +1,6 @@
 require 'rubygems'
 require 'google/api_client'
-require File.dirname(__FILE__) + '/../lib/logging'
-require File.dirname(__FILE__) + '/../lib/common'
-require 'logger'
+require_relative 'logging'
 require 'date'
 
 class Google_analytics
@@ -15,14 +13,18 @@ class Google_analytics
   SEPARATOR = ","
   attr :client,
        :analytics,
-       :profil_id_ga
+       :profil_id_ga,
+       :logger
 
   def initialize(profil_id_ga)
+    
+    @logger = Logging::Log.new(self, :staging => $staging, :debugging => $debugging)
     @profil_id_ga = profil_id_ga
     begin
       params = YAML::load(File.open(PARAMETERS), "r:UTF-8")
     rescue Exception => e
-      Common.error("load parameter file #{PARAMETERS} : #{e.message}")
+      @logger.an_event.error("cannot load parameter file #{PARAMETERS}")
+      @logger.an_event.debug e
     end
     raise Google_analyticsError, "$envir is not define" if params[$envir].nil?
     raise Google_analyticsError, "service_account_email is not define" if params[$envir]["service_account_email"].nil?
@@ -32,22 +34,24 @@ class Google_analytics
     private_key = params[$envir]["private_key"] #"7b2746cb605ca688f68d25d860cb6878e93e25c9-privatekey.p12"
     ENV['SSL_CERT_FILE'] = CREDENTIALS + "cacert.pem"
 
-    Common.debug("ENV['SSL_CERT_FILE'] : #{ENV['SSL_CERT_FILE']}")
-    Common.debug("service_account_email : #{service_account_email}")
-    Common.debug("private key file :#{CREDENTIALS + private_key}")
+    @logger.an_event.debug("ENV['SSL_CERT_FILE'] : #{ENV['SSL_CERT_FILE']}")
+    @logger.an_event.debug("service_account_email : #{service_account_email}")
+    @logger.an_event.debug("private key file :#{CREDENTIALS + private_key}")
     begin
       options = {:application_name => "querying_ga", :application_version => "v1"}
       @client = Google::APIClient.new(options)
+      @logger.an_event.debug ("client api for #{@profil_id_ga} is created")
     rescue Exception => e
-      Common.error("creation client google api for #{@profil_id_ga} failed")
-      Common.debug("#{e.message}")
+      @logger.an_event.error("cannot create client google api for #{@profil_id_ga}")
+      @logger.an_event.debug e
       raise Google_analyticsError
     end
     begin
       @analytics = @client.discovered_api('analytics', 'v3')
+      @logger.an_event.debug ("api analytics #{@profil_id_ga} is discovered")
     rescue Exception => e
-      Common.error("discovering api analytics for #{@profil_id_ga} failed")
-      Common.debug("#{e.message}")
+      @logger.an_event.error("cannot discover api analytics for #{@profil_id_ga}")
+      @logger.an_event.debug e
       raise Google_analyticsError
     end
     begin
@@ -58,10 +62,10 @@ class Google_analytics
                                                   key)
     @client.authorization = asserter.authorize()
 
-    Common.information("connection to google analytics for #{@profil_id_ga} is available")
+    @logger.an_event.debug ("client api for #{@profil_id_ga} is authorized")
   rescue Exception => e
-    Common.error("authorization to use google analytics for #{@profil_id_ga} failed")
-    Common.debug("#{e.message}")
+    @logger.an_event.error("cannot authorize to use google analytics for #{@profil_id_ga}")
+    @logger.an_event.debug e
     raise Google_analyticsError
   end
 end
@@ -83,7 +87,7 @@ def execute(dimensions, metrics, start_date, end_date, options={})
             'metrics' => metrics.split(SEPARATOR).map! { |metric| "ga:#{metric}" }.join(SEPARATOR),
             'start-date' => start_date,
             'end-date' => end_date,
-            'max-results' => Common.min(MAX_RESULT_PER_QUERY, max_elements_request)
+            'max-results' => @logger.an_event.min(MAX_RESULT_PER_QUERY, max_elements_request)
   }
   if !options["sort"].nil?
     params['sort'] = options["sort"].split(SEPARATOR).map { |predica|
@@ -102,7 +106,7 @@ def execute(dimensions, metrics, start_date, end_date, options={})
   # voir Issue 57: 	Google Analytics API: filter with AND is impossible pour le gem google-api-ruby-client
   #
   #
-  Common.debug("params query google analytics #{params}")
+  @logger.an_event.debug("params query google analytics #{params}")
 
   continue = true
   results = []
@@ -117,15 +121,15 @@ def execute(dimensions, metrics, start_date, end_date, options={})
         }
         results << res_row
       }
-      Common.information("request to google analytics from index #{params['start-index']} to index #{MAX_RESULT_PER_QUERY + params['start-index'].to_i}")
+      @logger.an_event.debug("request to google analytics from index #{params['start-index']} to index #{MAX_RESULT_PER_QUERY + params['start-index'].to_i}")
     rescue Exception => e
       continue = false
-      Common.error("request to google analitycs failed")
-      Common.debug("#{e.message}")
+      @logger.an_event.error("cannot request to google analytics from index #{params['start-index']} to index #{MAX_RESULT_PER_QUERY + params['start-index'].to_i}")
+      @logger.an_event.debug  e
       raise Google_analyticsError, e.message
     end
-    Common.debug("size(max result ga) #{results_ga.data.totalResults}")
-    Common.debug("count row #{results.size}")
+    @logger.an_event.debug("size(max result ga) #{results_ga.data.totalResults}")
+    @logger.an_event.debug("count row #{results.size}")
     start_index += MAX_RESULT_PER_QUERY
     continue = false if results.size >= results_ga.data.totalResults
   end

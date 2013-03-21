@@ -1,18 +1,15 @@
 require 'rubygems'
 require 'eventmachine'
-require File.dirname(__FILE__) + '/../model/communication.rb'
-require File.dirname(__FILE__) + '/../lib/common.rb'
-require File.dirname(__FILE__) + '/../model/event.rb'
-require File.dirname(__FILE__) + '/../model/events.rb'
+require_relative '../model/planning/event'
+require_relative '../model/planning/events'
+
 
 module MyKeyboardHandler
-  attr :events,
-       :scrape_server_port
+  attr :events
   include EM::Protocols::LineText2
+  include Planning
+  def initialize()
 
-  def initialize(scrape_server_port)
-
-    @scrape_server_port = scrape_server_port
     @events = Events.new()
     display
   end
@@ -51,8 +48,8 @@ module MyKeyboardHandler
   end
 end
 
-scrape_server_port = 9151
-$envir = "production"
+
+$staging = "production"
 PARAMETERS = File.dirname(__FILE__) + "/../parameter/" + File.basename(__FILE__, ".rb") + ".yml"
 ENVIRONMENT= File.dirname(__FILE__) + "/../parameter/environment.yml"
 #--------------------------------------------------------------------------------------------------------------------
@@ -60,21 +57,21 @@ ENVIRONMENT= File.dirname(__FILE__) + "/../parameter/environment.yml"
 #--------------------------------------------------------------------------------------------------------------------
 begin
   environment = YAML::load(File.open(ENVIRONMENT), "r:UTF-8")
-  $envir = environment["staging"] unless environment["staging"].nil?
+  $staging = environment["staging"] unless environment["staging"].nil?
 rescue Exception => e
-  Common.warning("loading parameter file #{ENVIRONMENT} failed : #{e.message}")
+  p e
 end
-Common.information("environment : #{$envir}")
+p "environment : #{$staging}"
 begin
   params = YAML::load(File.open(PARAMETERS), "r:UTF-8")
-  scrape_server_port = params[$envir]["scrape_server_port"] unless params[$envir]["scrape_server_port"].nil?
+  $debugging = params[$staging]["debugging"] unless params[$staging]["debugging"].nil?
 rescue Exception => e
-  Common.alert("parameters file #{PARAMETERS} is not found")
+  p "parameters file #{PARAMETERS} is not found"
 end
 
-Common.information("parameters of client scraper : ")
-Common.information("scrape server port : #{scrape_server_port}")
+p "parameters of client scraper : "
+p "debugging : #{$debugging}"
 
 EM.run {
-  EM.open_keyboard MyKeyboardHandler, scrape_server_port
+  EM.open_keyboard MyKeyboardHandler
 }

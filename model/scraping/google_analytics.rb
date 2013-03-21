@@ -64,61 +64,33 @@ module Scraping
 # --------------------------------------------------------------------------------------------------------------
 
     def device_platform_plugin(label, date, profil_id_ga, website_id)
-      @logger.an_event.info "scraping device platform plugin for #{label} for #{date} is starting"
-      output_flow = nil
-      begin
-        # ATTENTION : le filtrage ne peut contenir que des rubriques présentes OBLIGATOIREMENT dans la requete dans metrics or dimension
-        # si un filtre n'est pas présent la requete echoué.
-        options={}
-        options["filters"] = {
-            "flashVersion" => "!(not set)",
-            "javaEnabled" => "!(not set)",
-            "browserVersion" => "!(not set)",
-            "operatingSystemVersion" => "!(not set)",
-            "browser" => @browsers,
-            "operatingSystem" => @operatingSystems,
-            "isMobile" => "No"
-        }
+      # ATTENTION : le filtrage ne peut contenir que des rubriques présentes OBLIGATOIREMENT dans la requete dans metrics or dimension
+      # si un filtre n'est pas présent la requete echoué.
+      options={}
+      options["filters"] = {
+          "flashVersion" => "!(not set)",
+          "javaEnabled" => "!(not set)",
+          "browserVersion" => "!(not set)",
+          "operatingSystemVersion" => "!(not set)",
+          "browser" => @browsers,
+          "operatingSystem" => @operatingSystems,
+          "isMobile" => "No"
+      }
 
-        options["sort"] = "-visits"
-        options["max-results"] = MAX_RESULTS
-
-        output_flow = scraping("scraping-device-platform-plugin",
-                               label,
-                               date,
-                               profil_id_ga,
-                               "browser,browserVersion,operatingSystem,operatingSystemVersion,flashVersion,javaEnabled,isMobile",
-                               "visits",
-                               DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
-                               DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
-                               options,
-                               0) # percent de resultat conservé
-      rescue Exception => e
-        @logger.an_event.error "cannot scrape <device platform plugin> for #{label}"
-        @logger.an_event.debug e
-      end
-
-      # pousser le flow vers input_flow_server sur
-      begin
-        output_flow.push($authentification_server_port,
-                         $input_flows_server_ip,
-                         $input_flows_server_port,
-                         $ftp_server_port)
-        @logger.an_event.info "push flow <#{output_flow.basename}> to input flow server for #{label}"
-      rescue Exception => e
-        @logger.an_event.error "cannot push flow #{output_flow.basename} to input flow server #{$input_flows_server_ip}:#{$input_flows_server_port} for #{label} failed"
-        @logger.an_event.debug e
-      end
-      begin
-        options = {"path" => "/websites/#{website_id}/device_platforme_querying_date",
-                   "scheme" => "http"}
-        Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
-        @logger.an_event.info "update querying date <device platform pluging> for website <#{label}>"
-      rescue Exception => e
-        @logger.an_event.error "cannot update querying date <device platform plugin> to #{$statupweb_server_ip}:#{$statupweb_server_port} for Website <#{label}>"
-        @logger.an_event.debug e
-      end
-      @logger.an_event.info "scraping device platform plugin for #{label} is over"
+      options["sort"] = "-visits"
+      options["max-results"] = MAX_RESULTS
+      execute("device platform plugin",
+              "scraping-device-platform-plugin",
+              "browser,browserVersion,operatingSystem,operatingSystemVersion,flashVersion,javaEnabled,isMobile",
+              "visits",
+              DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
+              DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
+              0,
+              label,
+              date,
+              profil_id_ga,
+              options,
+              "/websites/#{website_id}/device_platforme_querying_date")
     end
 
 
@@ -129,63 +101,33 @@ module Scraping
     # --------------------------------------------------------------------------------------------------------------
 
     def device_platform_resolution(label, date, profil_id_ga, website_id)
+      options={}
+      # ATTENTION : le filtrage ne peut contenir que des rubriques présentes OBLIGATOIREMENT dans la requete dans metrics or dimension
+      # si un filtre n'est pas présent la requete echoué.
+      options["filters"] = {
+          "flashVersion" => "!(not set)",
+          "javaEnabled" => "!(not set)",
+          "browserVersion" => "!(not set)",
+          "operatingSystemVersion" => "!(not set)",
+          "browser" => @browsers,
+          "operatingSystem" => @operatingSystems,
+          "isMobile" => "No"
+      }
 
-      @logger.an_event.info "Scraping device platform resolution for #{label} for #{date} is starting"
-      output_flow = nil
-      begin
-        options={}
-        # ATTENTION : le filtrage ne peut contenir que des rubriques présentes OBLIGATOIREMENT dans la requete dans metrics or dimension
-        # si un filtre n'est pas présent la requete echoué.
-        options["filters"] = {
-            "flashVersion" => "!(not set)",
-            "javaEnabled" => "!(not set)",
-            "browserVersion" => "!(not set)",
-            "operatingSystemVersion" => "!(not set)",
-            "browser" => @browsers,
-            "operatingSystem" => @operatingSystems,
-            "isMobile" => "No"
-        }
-
-        options["sort"] = "-visits"
-        options["max-results"] = MAX_RESULTS
-
-
-        output_flow = scraping("scraping-device-platform-resolution",
-                               label,
-                               date,
-                               profil_id_ga,
-                               "browser,browserVersion,operatingSystem,operatingSystemVersion,screenColors,screenResolution,isMobile",
-                               "visits",
-                               DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
-                               DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
-                               options,
-                               1) # percent de resultat conservé)
-      rescue Exception => e
-        @logger.an_event.error "Scraping device platform resolution for #{label} failed"
-        @logger.an_event.debug e
-      end
-
-      # pousser le flow vers input_flow_server sur engine_bot
-      begin
-        output_flow.push($authentification_server_port,
-                         $input_flows_server_ip,
-                         $input_flows_server_port,
-                         $ftp_server_port)
-      rescue Exception => e
-        @logger.an_event.error "Output_flow device platform resolution push to input flow server for #{label} failed"
-        @logger.an_event.debug e
-      end
-      # maj date de scraping sur webstatup
-      begin
-        options = {"path" => "/websites/#{website_id}/device_platforme_querying_date",
-                   "scheme" => "http"}
-        Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
-        @logger.an_event.info "Updating device platform querying date for Website <#{label}>"
-      rescue Exception => e
-        @logger.an_event.error "Updating device platform querying for Website <#{label}> failed"
-        @logger.an_event.debug e
-      end
-      @logger.an_event.info "Scraping device platform resolution for #{label} is over"
+      options["sort"] = "-visits"
+      options["max-results"] = MAX_RESULTS
+      execute("device platform resolution",
+              "scraping-device-platform-resolution",
+              "browser,browserVersion,operatingSystem,operatingSystemVersion,screenColors,screenResolution,isMobile",
+              "visits",
+              DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
+              DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
+              1,
+              label,
+              date,
+              profil_id_ga,
+              options,
+              "/websites/#{website_id}/device_platforme_querying_date")
     end
 
     #--------------------------------------------------------------------------------------------------------------
@@ -195,50 +137,22 @@ module Scraping
     # --------------------------------------------------------------------------------------------------------------
 
     def traffic_source_landing_page(label, date, profil_id_ga, website_id)
-      @logger.an_event.info "Scraping traffic source for #{label} for #{date} is starting"
+      options={}
+      options["sort"] = "-entrances"
+      options["max-results"] = MAX_RESULTS
+      execute("traffic source",
+              "scraping-traffic-source-landing-page",
+              "hostname,landingPagePath,referralPath,source,medium,keyword",
+              "entrances",
+              DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
+              DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
+              0,
+              label,
+              date,
+              profil_id_ga,
+              options,
+              "/websites/#{website_id}/traffic_source_querying_date")
 
-      output_flow = nil
-      begin
-        options={}
-        options["sort"] = "-entrances"
-        options["max-results"] = MAX_RESULTS
-
-        output_flow = scraping("scraping-traffic-source-landing-page",
-                               label,
-                               date,
-                               profil_id_ga,
-                               "hostname,landingPagePath,referralPath,source,medium,keyword",
-                               "entrances",
-                               DateTime.now.prev_month(6).strftime("%Y-%m-%d"), # fenetre glissante de selection de 6 mois
-                               DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
-                               options,
-                               0) # percent de resultat conservé     #TODO etudier le pourcentage de resultat attendu
-      rescue Exception => e
-        @logger.an_event.error "Scraping traffic source for #{label} failed"
-        @logger.an_event.debug e
-      end
-
-      # pousser le flow vers input_flow_server sur engine_bot
-      begin
-        output_flow.push($authentification_server_port,
-                         $input_flows_server_ip,
-                         $input_flows_server_port,
-                         $ftp_server_port)
-      rescue Exception => e
-        @logger.an_event.error "Output_flow traffic source push to input flow server for #{label} failed"
-        @logger.an_event.debug e
-      end
-      # maj date de scraping sur webstatup
-      begin
-        options = {"path" => "/websites/#{website_id}/traffic_source_querying_date",
-                   "scheme" => "http"}
-        Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
-        @logger.an_event.info "Updating traffic source landing page querying date for Website <#{label}>"
-      rescue Exception => e
-        @logger.an_event.error "Updating traffic source landing page querying for Website <#{label}> failed"
-        @logger.an_event.debug e
-      end
-      @logger.an_event.info "Scraping traffic source for #{label} is over"
     end
 
 
@@ -250,48 +164,22 @@ module Scraping
 
 
     def hourly_daily_distribution(label, date, profil_id_ga, website_id)
-      @logger.an_event.info "Scraping hourly daily distribution for #{label} for #{date} is starting"
-      output_flow = nil
-      begin
-        options={}
-        options["sort"] = "date"
-        options["max-results"] = 24 * 7
+      options={}
+      options["sort"] = "date"
+      options["max-results"] = 24 * 7
+      execute("scraping hourly daily distribution",
+              "scraping-hourly-daily-distribution",
+              "day,hour,date",
+              "visits",
+              DateTime.now.prev_day(7).strftime("%Y-%m-%d"),
+              DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
+              0,
+              label,
+              date,
+              profil_id_ga,
+              options,
+              "/websites/#{website_id}/hourly_daily_distribution_querying_date")
 
-        output_flow = scraping("scraping-hourly-daily-distribution",
-                               label,
-                               date,
-                               profil_id_ga,
-                               "day,hour,date",
-                               "visits",
-                               DateTime.now.prev_day(7).strftime("%Y-%m-%d"),
-                               DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
-                               options)
-      rescue Exception => e
-        @logger.an_event.error "Scraping hourly_daily_distribution for #{label} failed"
-        @logger.an_event.debug e
-      end
-      # pousser le flow vers input_flow_server sur engine_bot
-      begin
-        output_flow.push($authentification_server_port,
-                         $input_flows_server_ip,
-                         $input_flows_server_port,
-                         $ftp_server_port)
-      rescue Exception => e
-        @logger.an_event.error "Output_flow hourly daily distribution  push to input flow server for #{label} failed"
-        @logger.an_event.debug e
-      end
-
-      # maj date de scraping sur webstatup
-      begin
-        options = {"path" => "/websites/#{website_id}/hourly_daily_distribution_querying_date",
-                   "scheme" => "http"}
-        Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
-        @logger.an_event.info "Updating hourly daily distribution querying date for Website <#{label}>"
-      rescue Exception => e
-        @logger.an_event.error "Updating hourly daily distribution querying for Website <#{label}> failed"
-        @logger.an_event.debug e
-      end
-      @logger.an_event.info "Scraping hourly daily distribution for #{label} is over"
     end
 
 
@@ -301,49 +189,21 @@ module Scraping
 
 # --------------------------------------------------------------------------------------------------------------
     def behaviour(label, date, profil_id_ga, website_id)
-      @logger.an_event.info "Scraping behaviour for #{label} for #{date} is starting"
-      output_flow = nil
-      begin
         options={}
         options["sort"] = "date"
         options["max-results"] = 7
-
-        output_flow = scraping("scraping-behaviour",
-                               label,
-                               date,
-                               profil_id_ga,
-                               "day,date",
-                               "percentNewVisits,visitBounceRate,avgTimeOnSite,pageviewsPerVisit,visits",
-                               DateTime.now.prev_day(7).strftime("%Y-%m-%d"),
-                               DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
-                               options)
-      rescue Exception => e
-        @logger.an_event.error "Scraping behaviour for #{label} failed"
-        @logger.an_event.debug e
-      end
-
-      # pousser le flow vers input_flow_server sur engine_bot
-      begin
-        output_flow.push($authentification_server_port,
-                         $input_flows_server_ip,
-                         $input_flows_server_port,
-                         $ftp_server_port)
-        @logger.an_event.info "push behaviour of #{label}"
-      rescue Exception => e
-        @logger.an_event.error "push behaviour of #{label} failed"
-        @logger.an_event.debug e
-      end
-
-      begin
-        options = {"path" => "/websites/#{website_id}/behaviour_querying_date",
-                   "scheme" => "http"}
-        Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
-        @logger.an_event.info "Update behaviour querying date for #{label}"
-      rescue Exception => e
-        @logger.an_event.warn "Update behaviour querying date for Website <#{label}> failed"
-        @logger.an_event.debug e
-      end
-      @logger.an_event.info "Scraping behaviour for #{label} is over"
+        execute("scraping behaviour",
+                "scraping-behaviour",
+                "day,date",
+                "percentNewVisits,visitBounceRate,avgTimeOnSite,pageviewsPerVisit,visits",
+                DateTime.now.prev_day(7).strftime("%Y-%m-%d"),
+                DateTime.now.prev_day(1).strftime("%Y-%m-%d"),
+                0,
+                label,
+                date,
+                profil_id_ga,
+                options,
+                "/websites/#{website_id}/behaviour_querying_date")
     end
 
 
@@ -378,7 +238,7 @@ module Scraping
                          $ftp_server_port)
         @logger.an_event.info "push flow <#{output_flow.basename}> to input flow server for #{label}"
       rescue Exception => e
-        @logger.an_event.error "cannot push flow #{output_flow.basename} to input flow server #{$input_flows_server_ip}:#{$input_flows_server_port} for #{label} failed"
+        @logger.an_event.error "cannot push flow #{output_flow.basename} to input flow server #{$input_flows_server_ip}:#{$input_flows_server_port} for #{label}"
         @logger.an_event.debug e
       end
       begin

@@ -1,8 +1,8 @@
-
 development:
   listening_port: 9153
-
+  debugging: true
 test:
   listening_port: 9153
+  debugging: false
 
 production:

@@ -3,6 +3,7 @@ require 'eventmachine'
 require 'ice_cube'
 require 'json'
 require_relative '../communication'
+require_relative '../../model/tasking/task'
 
 module Planning
   class Event
@@ -13,6 +14,7 @@ module Planning
     SAVE = "save"
     DELETE = "delete"
 
+    include Tasking
     attr :key,
          :periodicity,
          :cmd,
@@ -45,19 +47,30 @@ module Planning
           "cmd" => @cmd,
       }.to_s(*a)
     end
-
-    def execute(load_server_port)
+    #
+    #def execute(load_server_port)
+    #  begin
+    #    data = {
+    #        "cmd" => @cmd,
+    #        "label" => @business["label"],
+    #        "date_building" => @key["building_date"] || Date.today,
+    #        "data" => @business}
+    #
+    #    Information.new(data).send_local(load_server_port)
+    #  rescue Exception => e
+    #    raise EventException, "cannot execute event <#{@cmd}> for <#{@business["label"]}> because #{e}"
+    #  end
+    #end
+    def execute(toto)
       begin
-        data = {
-            "cmd" => @cmd,
-            "label" => @business["label"],
-            "date_building" => @key["building_date"] || Date.today,
-            "data" => @business}
-
-        Information.new(data).send_local(load_server_port)
+      data = {
+          "label" => @business["label"],
+          "date_building" => @key["building_date"] || Date.today,
+          "data" => @business}
+     Task.new(@cmd, data).execute
       rescue Exception => e
         raise EventException, "cannot execute event <#{@cmd}> for <#{@business["label"]}> because #{e}"
-      end
+        end
     end
   end
 

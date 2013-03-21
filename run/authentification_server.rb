@@ -3,22 +3,27 @@ require 'eventmachine'
 require 'json'
 require 'json/ext'
 require 'digest/sha2'
-require File.dirname(__FILE__) + '/../lib/logging'
-require 'logger'
 require 'yaml'
-require File.dirname(__FILE__) + '/../model/authentification'
-require File.dirname(__FILE__) + '/../lib/common'
+
+require_relative '../lib/logging'
+require_relative '../model/authentification'
+
 
 module AuthentificationServer
-  include Common
+  attr :logger
+
+  def initialize(logger)
+    @logger = logger
+  end
 
   def receive_data param
-    debug ("data receive : #{param}")
+    @logger.an_event.debug ("data receive : #{param}")
 
     begin
       Thread.new { execute_task(YAML::load param) }
     rescue Exception => e
-      warning("data receive #{param} : #{e.message}")
+      @logger.an_event.error "cannot execute task"
+      @logger.an_event.debug e
     end
   end
 
@@ -28,32 +33,32 @@ module AuthentificationServer
         authentification = Authentification.new(new_user, new_pwd)
         new_token(authentification)
         send_data (YAML::dump authentification)
-        information("push new authentification")
+        @logger.an_event.info ("push new authentification")
         close_connection_after_writing
       when "check"
         authentification = data["authentification"]
         send_data (YAML::dump check_token(authentification))
-        information("check authentification")
+        @logger.an_event.info ("check authentification")
         close_connection_after_writing
       when "delete"
         authentification = data["authentification"]
         delete_token(authentification)
-        information("delete authentification")
+        @logger.an_event.info ("delete authentification")
         close_connection
       when "delete_all"
         delete_all()
-        information("delete all authentifications")
+        @logger.an_event.info ("delete all authentifications")
         close_connection
       when "list"
         send_data ($tokens)
         close_connection_after_writing
-        information("push all tokens")
+        @logger.an_event.info ("push all tokens")
       when "exit"
         close_connection
         EventMachine.stop
       else
         port, ip = Socket.unpack_sockaddr_in(get_peername)
-        alert("unknown action : #{data["cmd"]} from  #{ip}:#{port}")
+        @logger.an_event.warn ("unknown action : #{data["cmd"]} from  #{ip}:#{port}")
     end
   end
 
@@ -113,38 +118,46 @@ $tokens = Array.new
 $sem = Mutex.new
 PARAMETERS = File.dirname(__FILE__) + "/../parameter/" + File.basename(__FILE__, ".rb") + ".yml"
 ENVIRONMENT= File.dirname(__FILE__) + "/../parameter/environment.yml"
-$log_file = File.dirname(__FILE__) + "/../log/" + File.basename(__FILE__, ".rb") + ".log"
+
 listening_port = 9153
-$envir="production"
+$staging="production"
 
 #--------------------------------------------------------------------------------------------------------------------
 # INPUT
 #--------------------------------------------------------------------------------------------------------------------
 begin
   environment = YAML::load(File.open(ENVIRONMENT), "r:UTF-8")
-  $envir = environment["staging"] unless environment["staging"].nil?
+  $staging = environment["staging"] unless environment["staging"].nil?
 rescue Exception => e
-  Common.warning("loading parameter file #{ENVIRONMENT} failed : #{e.message}")
+  STDERR << "loading parameter file #{ENVIRONMENT} failed : #{e.message}"
 end
-Common.information("environment : #{$envir}")
 begin
   params = YAML::load(File.open(PARAMETERS), "r:UTF-8")
-  listening_port = params[$envir]["listening_port"] unless params[$envir]["listening_port"].nil?
+  listening_port = params[$staging]["listening_port"] unless params[$staging]["listening_port"].nil?
+  scrape_server_port = params[$staging]["scrape_server_port"] unless params[$staging]["scrape_server_port"].nil?
+  periodicity = params[$staging]["periodicity"] unless params[$staging]["periodicity"].nil?
+  $debugging = params[$staging]["debugging"] unless params[$staging]["debugging"].nil?
 rescue Exception => e
-  Common.warning("parameters file #{PARAMETERS} is not found : #{e.message}")
+  STDERR << "loading parameters file #{PARAMETERS} failed : #{e.message}"
 end
-Common.information ("parameters of authentification server : ")
-Common.information ("listening port : #{listening_port}")
+
+logger = Logging::Log.new(self, :staging => $staging, :id_file => File.basename(__FILE__, ".rb"), :debugging => $debugging)
+
+Logging::show_configuration
+logger.a_log.info "parameters of authentification server :"
+logger.a_log.info "listening port : #{listening_port}"
+logger.a_log.info "debugging : #{$debugging}"
+logger.a_log.info "staging : #{$staging}"
 #--------------------------------------------------------------------------------------------------------------------
 # MAIN
 #--------------------------------------------------------------------------------------------------------------------
 EventMachine.run {
   Signal.trap("INT") { EventMachine.stop }
   Signal.trap("TERM") { EventMachine.stop }
-  Common.information ("authentification server is starting")
-  EventMachine.start_server "localhost", listening_port, AuthentificationServer
+  logger.a_log.info "authentification server is running"
+  EventMachine.start_server "localhost", listening_port, AuthentificationServer, logger
 }
-Common.information ("authentification server stopped")
+logger.a_log.info "authentification server stopped"
 
 
 

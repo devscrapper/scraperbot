@@ -4,7 +4,7 @@ require 'domainatrix'
 require 'json'
 require 'json/ext'
 
-
+module Scraping
 class Page
   class PageError < StandardError
   end
@@ -200,3 +200,4 @@ class Page
   end
 end
 # End Class Page ------------------------------------------------------------------------------------------------
+end

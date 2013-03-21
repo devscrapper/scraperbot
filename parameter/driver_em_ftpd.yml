@@ -1,7 +1,7 @@
 development:
   authentification_server_port: 9153
-
+  debugging: true
 test:
   authentification_server_port: 9153
-
+  debugging: false
 production:

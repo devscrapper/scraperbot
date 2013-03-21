@@ -55,6 +55,7 @@ module Planning
 
     def delete_object(object, data_event)
       begin
+        require_relative "object2event/#{object.downcase}"
         events = eval(object).new(data_event).to_event
         @logger.an_event.debug "events #{events}"
         @sem.synchronize {
