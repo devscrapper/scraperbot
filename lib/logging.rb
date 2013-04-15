@@ -32,7 +32,7 @@ module Logging
   STAGING_DEV = "development"
   STAGING_TEST = "test"
   STAGING_PROD = "production"
-  include Logging.globally
+
   class Log
     DIR_LOG = File.dirname(__FILE__) + "/../log"
     attr_reader :logger
@@ -94,12 +94,14 @@ module Logging
 
     def syslog()
       #TODO terminer l'appender syslog
-      #syslog = Logging::appenders.syslog(@class_name)
+      Logging::Appenders.syslog(@class_name)
     end
 
     def rollfile()
-      Logging::Appenders.rolling_file(File.join(DIR_LOG, "#{@id_file}.log"), {:age => :daily, :keep => 7, :roll_by => :date})
+      return Logging::Appenders.rolling_file(File.join(DIR_LOG, "#{@id_file}.log"), {:age => :daily, :keep => 7, :roll_by => :date}) unless  @debugging
+      Logging::Appenders.rolling_file(File.join(DIR_LOG, "#{@id_file}.log"), {:truncate => true, :size => 5000000, :keep => 10, :roll_by => :number})   if @debugging
     end
+
 
     def stdout()
       Logging::color_scheme('bright',
@@ -145,7 +147,7 @@ module Logging
       @logger.level = :debug
       @logger.trace = true
       @logger.add_appenders(email)
-      @logger.add_appenders(syslog)
+      @logger.add_appenders(syslog)  if HAVE_SYSLOG
       @logger.add_appenders(debfile)
       @logger.add_appenders(ymfile)
     end
@@ -176,7 +178,7 @@ module Logging
       @logger = Logging.logger["root"]
       @logger.level = :info
       @logger.add_appenders(email)
-      @logger.add_appenders(syslog)
+      @logger.add_appenders(syslog)  if HAVE_SYSLOG
       @logger.add_appenders(rollfile)
     end
 
