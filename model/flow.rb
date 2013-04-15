@@ -1,6 +1,5 @@
-require 'socket'
-
-require File.dirname(__FILE__) + '/../model/communication'
+require 'net/ftp'
+require_relative 'communication'
 require_relative '../lib/logging'
 
 class Flow
@@ -20,7 +19,7 @@ class Flow
        :ext,
        :logger
 
-  #TODO publier la version vers les autres  applications
+
   #----------------------------------------------------------------------------------------------------------------
   # class methods
   #----------------------------------------------------------------------------------------------------------------
@@ -80,7 +79,7 @@ class Flow
 
   def basename
     basename = @type_flow + SEPARATOR + @label + SEPARATOR + @date
-    basename += SEPARATOR + @vol unless @vol.empty?
+    basename += SEPARATOR + @vol unless @vol.nil?
     basename += @ext
     basename
   end
@@ -94,12 +93,24 @@ class Flow
 
   def append(data)
     @descriptor = File.open(absolute_path, "a:UTF-8") if @descriptor.nil?
+    @descriptor.sync = true
     @descriptor.write(data)
+  end
+
+  def rewind()
+    raise FlowException, "Flow <#{absolute_path}> not exist" unless exist?
+    @descriptor = File.open(absolute_path, "r:UTF-8") if @descriptor.nil?
+    @descriptor.rewind
   end
 
   def close
     @descriptor.close unless @descriptor.nil?
     @descriptor = nil
+  end
+
+  def empty
+    @descriptor = File.open(absolute_path, "w:BOM|UTF-8:-") if @descriptor.nil?
+    write("")
   end
 
   def size
@@ -109,7 +120,13 @@ class Flow
 
   def count_lines(eofline)
     raise FlowException, "Flow <#{absolute_path}> not exist" unless exist?
-    File.foreach(absolute_path, eofline, encoding: "r:BOM|UTF-8:-").inject(0) { |c| c+1 }
+    File.foreach(absolute_path, eofline, encoding: "BOM|UTF-8:-").inject(0) { |c| c+1 }
+  end
+
+  def total_lines(eofline)
+    total_lines = 0
+    volumes.each { |flow| total_lines += flow.count_lines(eofline) }
+    total_lines
   end
 
   def descriptor
@@ -120,7 +137,7 @@ class Flow
 
   def readline
     raise FlowException, "Flow <#{absolute_path}> not exist" unless exist?
-    @descriptor = File.open(absolute_path, "r:BOM|UTF-8:-") if @descriptor.nil?
+    @descriptor = File.open(absolute_path, "BOM|UTF-8:-") if @descriptor.nil?
     @descriptor.readline()
   end
 
@@ -153,9 +170,18 @@ class Flow
     chosen_file
   end
 
-  def archive
+  def archive()
+    # archive le flow courant : deplace le fichier dans le repertoire ARCHIVE
     raise FlowException, "Flow <#{absolute_path}> not exist" unless exist?
     FileUtils.mv(absolute_path, ARCHIVE, :force => true)
+  end
+
+  def archive_previous
+    # N'ARCHIVE PAS L'INSTANCE COURANTE
+    # archive le flow ou les flows qui sont antérieurs à l'instance courante
+    # l'objectif est de faire le ménage dans le répertoire qui contient l'instance courante
+    # le ou les flow sont déplacés dans ARCHIVE
+
   end
 
   def volumes
@@ -196,12 +222,12 @@ class Flow
 
   def put(ip_to, port_to, port_ftp_server, user, pwd, last_volume = false)
     data = {
-        "port_ftp_server" => port_ftp_server,
-        "user" => user,
-        "pwd" => pwd,
         "type_flow" => @type_flow,
-        "basename" => basename,
-        "last_volume" => last_volume,
+        "data" => {"port_ftp_server" => port_ftp_server,
+                   "user" => user,
+                   "pwd" => pwd,
+                   "basename" => basename,
+                   "last_volume" => last_volume}
     }
     begin
       Information.new(data).send_to(ip_to, port_to)

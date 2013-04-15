@@ -26,12 +26,12 @@ class Google_analytics
       @logger.an_event.error("cannot load parameter file #{PARAMETERS}")
       @logger.an_event.debug e
     end
-    raise Google_analyticsError, "$envir is not define" if params[$envir].nil?
-    raise Google_analyticsError, "service_account_email is not define" if params[$envir]["service_account_email"].nil?
-    raise Google_analyticsError, "private_key is not define" if params[$envir]["private_key"].nil?
+    raise Google_analyticsError, "$staging is not define" if params[$staging].nil?
+    raise Google_analyticsError, "service_account_email is not define" if params[$staging]["service_account_email"].nil?
+    raise Google_analyticsError, "private_key is not define" if params[$staging]["private_key"].nil?
 
-    service_account_email = params[$envir]["service_account_email"] #"33852996685@developer.gserviceaccount.com" # Email of service account
-    private_key = params[$envir]["private_key"] #"7b2746cb605ca688f68d25d860cb6878e93e25c9-privatekey.p12"
+    service_account_email = params[$staging]["service_account_email"] #"33852996685@developer.gserviceaccount.com" # Email of service account
+    private_key = params[$staging]["private_key"] #"7b2746cb605ca688f68d25d860cb6878e93e25c9-privatekey.p12"
     ENV['SSL_CERT_FILE'] = CREDENTIALS + "cacert.pem"
 
     @logger.an_event.debug("ENV['SSL_CERT_FILE'] : #{ENV['SSL_CERT_FILE']}")
@@ -87,7 +87,7 @@ def execute(dimensions, metrics, start_date, end_date, options={})
             'metrics' => metrics.split(SEPARATOR).map! { |metric| "ga:#{metric}" }.join(SEPARATOR),
             'start-date' => start_date,
             'end-date' => end_date,
-            'max-results' => @logger.an_event.min(MAX_RESULT_PER_QUERY, max_elements_request)
+            'max-results' => min(MAX_RESULT_PER_QUERY, max_elements_request)
   }
   if !options["sort"].nil?
     params['sort'] = options["sort"].split(SEPARATOR).map { |predica|
@@ -121,10 +121,10 @@ def execute(dimensions, metrics, start_date, end_date, options={})
         }
         results << res_row
       }
-      @logger.an_event.debug("request to google analytics from index #{params['start-index']} to index #{MAX_RESULT_PER_QUERY + params['start-index'].to_i}")
+      @logger.an_event.info("send request to google analytics from index <#{params['start-index']}> to index <#{MAX_RESULT_PER_QUERY + params['start-index'].to_i}>")
     rescue Exception => e
       continue = false
-      @logger.an_event.error("cannot request to google analytics from index #{params['start-index']} to index #{MAX_RESULT_PER_QUERY + params['start-index'].to_i}")
+      @logger.an_event.error("cannot send request to google analytics from index <#{params['start-index']} to index #{MAX_RESULT_PER_QUERY + params['start-index'].to_i}>")
       @logger.an_event.debug  e
       raise Google_analyticsError, e.message
     end
@@ -141,4 +141,7 @@ def remove_ga(name)
   name[3..name.size-1]
 end
 
+  def min(a,b)
+    a <= b ? a : b
+  end
 end

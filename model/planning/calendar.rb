@@ -70,20 +70,6 @@ module Planning
       end
     end
 
-    def wake_up(date, hour)
-      begin
-        data = {"object" => "Event",
-                "cmd" => "execute_all",
-                "data" => {"date" => date, "hour" => hour}}
 
-        logger.a_log.info "wake up calendar at date : #{date}, and hour #{hour}"
-        logger.a_log.debug data
-        logger.a_log.debug calendar_server_port
-        Information.new(data).send_local(calendar_server_port)
-      rescue Exception => e
-        logger.a_log.fatal "cannot execute events at date : #{date}, and hour #{hour}"
-        logger.a_log.debug e
-      end
-    end
   end
 end

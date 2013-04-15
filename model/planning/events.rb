@@ -87,7 +87,6 @@ module Planning
 
 
     def execute_one(event, load_server_port)
-      #TODO reporter la modif vers engine bot
       @events.each { |evt|
         evt.execute(load_server_port) if evt.key == event.key and evt.cmd == event.cmd
       } unless @events.nil?

@@ -1,4 +1,6 @@
+require_relative '../../../model/planning/event'
 module Planning
+
 
 
   class Policy

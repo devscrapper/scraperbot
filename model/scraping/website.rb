@@ -5,7 +5,7 @@ require "em-http-request"
 
 require_relative '../../lib/logging'
 require_relative '../communication.rb'
-require_relative  'page'
+require_relative 'page'
 
 
 #------------------------------------------------------------------------------------------
@@ -20,15 +20,15 @@ module Scraping
 #------------------------------------------------------------------------------------------
 # Globals variables
 #------------------------------------------------------------------------------------------
-    LOG_FILE = File.dirname(__FILE__) + "/../log/" + File.basename(__FILE__, ".rb") + ".log"
-    OUTPUT = File.dirname(__FILE__) + "/../output/"
-    EOFLINE2 ="\n"
+    OUTPUT = File.dirname(__FILE__) + "/../../output/"
+    EOFLINE ="\n"
     SEPARATOR="%SEP%"
 # Input
     attr :host # le hostname du site
 # Output
     attr :f, #fichier contenant les links
          :ferror # fichier contenant les links en erreur
+    :fleaves #fichier contenant les id des links ne contenant pas de lien
 # Private
     attr :start_time, # heure de d�part
          :nbpage, # nbr de page du site
@@ -53,6 +53,7 @@ module Scraping
     def initialize()
       @logger = Logging::Log.new(self, :staging => $staging, :debugging => $debugging)
     end
+
     def scraping_pages(label, date, url_root, count_page, schemes, types, website_id)
 
 
@@ -101,6 +102,9 @@ module Scraping
       urls << [@host, 1] # [url , le nombre d'essai de recuperation de la page associe a l'url]
       @known_url[@host] = @idpage
       @start_time = Time.now
+
+      #creation du fichier contenant les pages ou uri qui sont des feuilles du site
+      @fleaves = Flow.new(OUTPUT, "website", @label, @date, 0, ".txt")
 
       #creation du fichier de reporting des erreurs d'acces au lien contenus par les pages
       @ferror = Flow.new(OUTPUT, "website", @label, @date, 1, ".error")
@@ -175,7 +179,13 @@ module Scraping
       @logger.an_event.info("Scraping pages for #{@label} is over")
       @f.close
       @ferror.close
-      # informer Load_server qu'il peut telecharger le dernier volume
+      # si il n'existe pas de feuille le fichier n'est pas créé, il faut donc le créé vide (size=0) pour que le
+      # traitement de building matrix & page puisse se réaliser
+      @fleaves.empty unless @fleaves.exist?
+      @fleaves.close
+      # informer input flow server qu'il peut telecharger le dernier volume
+      @push_file_spawn.notify @fleaves, false
+      # informer input flow server qu'il peut telecharger le dernier volume
       @push_file_spawn.notify @f, true
       # maj date de scraping sur webstatup
       begin
@@ -202,12 +212,10 @@ module Scraping
 
     private
     def output(page)
-      uri = URI.parse(page.url)
-      host_path = uri.host + uri.path
-      @f.write(page.to_s + "#{EOFLINE2}")
-
+      @fleaves.write("#{page.id}#{EOFLINE}") if page.is_leaf?
+      @f.write(page.to_s + "#{EOFLINE}")
       if  @f.size > Flow::MAX_SIZE
-        # informer Load_server qu'il peut telecharger le fichier
+        # informer input flow server qu'il peut telecharger le fichier
         output_file = @f
         @f = output_file.new_volume()
         @push_file_spawn.notify output_file, false

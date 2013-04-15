@@ -48,30 +48,29 @@ module Logging
 
 
     def initialize(obj, opts = {})
-      @staging = opts.getopt(:staging, STAGING_PROD)
-      @debugging = opts.getopt(:debugging, false)
-      @class_name = obj.class.name.gsub("::","_")
-      @main = @class_name == Object.name
+      if Logging::initialized?
+        @logger = Logging::Logger[obj]
+      else
+        @staging = opts.getopt(:staging, STAGING_PROD)
+        @debugging = opts.getopt(:debugging, false)
+        @class_name = obj.class.name.gsub("::", "_")
+        @main = @class_name == Object.name
 
-      param_1(opts) if @debugging and [STAGING_TEST, STAGING_PROD].include?(@staging) and @main
-      param_4(opts) if !@debugging and [STAGING_TEST, STAGING_PROD].include?(@staging) and @main
+        param_1(opts) if @debugging and [STAGING_TEST, STAGING_PROD].include?(@staging) and @main
+        param_4(opts) if !@debugging and [STAGING_TEST, STAGING_PROD].include?(@staging) and @main
 
-      param_2(obj) if @debugging and !@main
-      param_5(obj) if !@debugging and !@main
+        param_2(obj) if @debugging and !@main
+        param_5(obj) if !@debugging and !@main
 
-      param_3(opts) if @debugging and [STAGING_DEV].include?(@staging) and @main
-      param_6(opts) if !@debugging and [STAGING_DEV].include?(@staging) and @main
-
+        param_3(opts) if @debugging and [STAGING_DEV].include?(@staging) and @main
+        param_6(opts) if !@debugging and [STAGING_DEV].include?(@staging) and @main
+      end
       @logger.debug "logging is available"
     end
 
     def ndc(args)
       args.each { |arg| Logging.ndc.push arg }
     end
-
-
-
-
 
 
     def email()
@@ -103,7 +102,22 @@ module Logging
     end
 
     def stdout()
-      Logging::Appenders.stdout(:level => :info)
+      Logging::color_scheme('bright',
+                            :levels => {
+                                :info => :green,
+                                :warn => :yellow,
+                                :error => :red,
+                                :fatal => [:white, :on_red]
+                            },
+                            :date => :blue,
+                            :logger => :cyan,
+                            :message => :black
+      )
+
+      Logging::Appenders.stdout(:level => :info, :layout => Logging.layouts.pattern(
+          :pattern => '[%d] %-5l %c: %m\n',
+          :color_scheme => 'bright'
+      ))
     end
 
     def debfile

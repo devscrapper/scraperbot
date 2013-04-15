@@ -167,7 +167,7 @@ module Scraping
       options={}
       options["sort"] = "date"
       options["max-results"] = 24 * 7
-      execute("scraping hourly daily distribution",
+      execute("hourly daily distribution",
               "scraping-hourly-daily-distribution",
               "day,hour,date",
               "visits",
@@ -192,7 +192,7 @@ module Scraping
         options={}
         options["sort"] = "date"
         options["max-results"] = 7
-        execute("scraping behaviour",
+        execute("behaviour",
                 "scraping-behaviour",
                 "day,date",
                 "percentNewVisits,visitBounceRate,avgTimeOnSite,pageviewsPerVisit,visits",
@@ -211,7 +211,7 @@ module Scraping
 # private
 #--------------------------------------------------------------------------------------------------------------
     def execute(query, basename_flow, dimensions, metrics, start_date, end_date, result_percent, label, date, profil_id_ga, options, uri_update_querying_date)
-      @logger.an_event.info "scraping #{query} for #{label} for #{date} is starting"
+      @logger.an_event.info "scraping <#{query}> for <#{label}> for <#{date}> is starting"
       output_flow = nil
       begin
 
@@ -226,7 +226,7 @@ module Scraping
                                options,
                                result_percent) # percent de resultat conservé
       rescue Exception => e
-        @logger.an_event.error "cannot scrape <#{query}> for #{label}"
+        @logger.an_event.error "cannot scrape <#{query}> for <#{label}>"
         @logger.an_event.debug e
       end
 
@@ -236,7 +236,7 @@ module Scraping
                          $input_flows_server_ip,
                          $input_flows_server_port,
                          $ftp_server_port)
-        @logger.an_event.info "push flow <#{output_flow.basename}> to input flow server for #{label}"
+        @logger.an_event.info "push flow <#{output_flow.basename}> to input flow server for <#{label}>"
       rescue Exception => e
         @logger.an_event.error "cannot push flow #{output_flow.basename} to input flow server #{$input_flows_server_ip}:#{$input_flows_server_port} for #{label}"
         @logger.an_event.debug e
@@ -250,28 +250,20 @@ module Scraping
         @logger.an_event.error "cannot update querying date <#{query}> to #{$statupweb_server_ip}:#{$statupweb_server_port} for Website <#{label}>"
         @logger.an_event.debug e
       end
-      @logger.an_event.info "scraping #{query} for #{label} is over"
+      @logger.an_event.info "scraping <#{query}> for <#{label}> is over"
     end
 
     def to_file(datas, type_flow, label, date)
-
       output_flow = Flow.new(OUTPUT, type_flow, label, date, 1)
-
       datas.each { |data|
-
         line = ""
         data.each { |key, value| line += "#{value}#{SEPARATOR2}" }
-
         output_flow.write("#{line}#{EOFLINE2}")
-
         if output_flow.size > Flow::MAX_SIZE
-
           # new flow
           output_flow = output_flow.new_volume()
-
         end
       }
-
       output_flow
     end
 
@@ -304,12 +296,14 @@ module Scraping
 
       rescue Exception => e
         if $staging == "development"
+          @logger.an_event.warn "query to google analytics for <#{label}> failed"
+          @logger.an_event.debug e
           # copie test file to output
           begin
             output_flow = Flow.new(OUTPUT, type_flow, label, date, 1)
             FileUtils.cp("#{TEST}#{type_flow}#{SEPARATOR6}#{label.gsub(/[_ ]/, "-")}.txt",
                          output_flow.absolute_path)
-            @logger.an_event.warn "use test file <#{type_flow}#{SEPARATOR6}#{label.gsub(/[_ ]/, "-")}.txt> for #{label}"
+            @logger.an_event.warn "use test file <#{type_flow}#{SEPARATOR6}#{label.gsub(/[_ ]/, "-")}.txt> for <#{label}>"
             output_flow
           rescue Exception => e
             @logger.an_event.error "cannot copy test file <#{TEST}#{type_flow}#{SEPARATOR6}#{label.gsub(/[_ ]/, "-")}.txt> to <#{output_flow.absolute_path}>"
@@ -317,7 +311,7 @@ module Scraping
             raise GoogleanalyticsException
           end
         else
-          @logger.an_event.error "query to google analytics for #{label} failed"
+          @logger.an_event.error "query to google analytics for <#{label}> failed"
           @logger.an_event.debug e
           raise GoogleanalyticsException
         end
@@ -359,6 +353,8 @@ module Scraping
 
     def filtering_with_filters(data, filters)
       return data if filters.nil?
+      @logger.an_event.info "filter browser and operatingSystem google analytics results"
+      @logger.an_event.debug "filters #{filters}"
       data.delete_if { |row| !et(filters, row) }
     end
 
@@ -370,6 +366,8 @@ module Scraping
       return data if percent == 0 or
           metric.count(",") > 0 #il y a plus d'un metric et c'est pas bon
       total_metric =0
+      @logger.an_event.info "filter percent google analytics results"
+      @logger.an_event.debug "percent #{percent}, of metric #{metric}"
       data.each { |row| total_metric += row[metric].to_i }
       data.delete_if { |row| row[metric].to_i < (percent * total_metric / 100).to_i }
     end

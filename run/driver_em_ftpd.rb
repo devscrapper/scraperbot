@@ -112,10 +112,10 @@ class FTPDriver
     end
     @logger = Logging::Log.new(self, :staging => @envir, :debugging => @debugging)
     Logging::show_configuration
-    logger.a_log.info "parameters of ftp server :"
-    logger.a_log.info "authentification server port : #{@authentification_server_port}"
-    logger.a_log.info "debugging : #{@debugging}"
-    logger.a_log.info "staging : #{@envir}"
+    @logger.an_event.info "parameters of ftp server :"
+    @logger.an_event.info "authentification server port : #{@authentification_server_port}"
+    @logger.an_event.info "debugging : #{@debugging}"
+    @logger.an_event.info "staging : #{@envir}"
   end
 
 end
