@@ -84,7 +84,8 @@ module AuthentificationServer
       sha256 = Digest::SHA256.new
       $sem.synchronize { $tokens.include?(sha256.digest (authen.user + authen.pwd)) unless authen.pwd.nil? and authen.user.nil? }
     rescue Exception => e
-      error(e.message, __LINE__)
+      @logger.an_event.debug e
+      @logger.an_event.error "cannot check token"
       false
     end
   end
@@ -95,7 +96,8 @@ module AuthentificationServer
       sha256 = Digest::SHA256.new
       $sem.synchronize { $tokens.delete(sha256.digest (authen.user + authen.pwd)) unless  authen.pwd.nil? and authen.user.nil? }
     rescue Exception => e
-      error(e.message, __LINE__)
+      @logger.an_event.debug e
+      @logger.an_event.error "cannot delete token"
       false
     end
   end
@@ -104,7 +106,8 @@ module AuthentificationServer
     begin
       $sem.synchronize { $tokens = $tokens.drop($tokens.size) }
     rescue Exception => e
-      error(e.message, __LINE__)
+      @logger.an_event.debug e
+      @logger.an_event.error "cannot delete all tokens"
       false
     end
   end
