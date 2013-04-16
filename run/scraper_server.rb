@@ -47,10 +47,10 @@ end
 
 logger = Logging::Log.new(self, :staging => $staging, :id_file => File.basename(__FILE__, ".rb"), :debugging => $debugging)
 
-Logging::show_configuration
 logger.a_log.info "parameters of calendar server :"
 logger.a_log.info "listening port : #{listening_port}"
 logger.a_log.info "calendar server port : #{$calendar_server_port}"
+logger.a_log.info "authentification server port : #{$authentification_server_port}"
 logger.a_log.info "input flows server : #{$input_flows_server_ip}:#{$input_flows_server_port}"
 logger.a_log.info "statupweb : #{$statupweb_server_ip}:#{$statupweb_server_port}"
 logger.a_log.info "ftp listening port : #{$ftp_server_port}"

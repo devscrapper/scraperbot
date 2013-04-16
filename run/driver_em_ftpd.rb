@@ -5,7 +5,6 @@ require 'yaml'
 
 class FTPDriver
   OUTPUT = File.dirname(__FILE__) + "/../output"
-  @@log_file = File.dirname(__FILE__) + "/../log/" + File.basename(__FILE__, ".rb") + ".log"
   PARAMETERS = File.dirname(__FILE__) + "/../parameter/" + File.basename(__FILE__, ".rb") + ".yml"
   ENVIRONMENT= File.dirname(__FILE__) + "/../parameter/environment.yml"
   attr :user, :pwd, :authentification_server_port, :envir, :logger, :debugging
@@ -67,6 +66,7 @@ class FTPDriver
      @logger.an_event.debug "FTPServer delete file <#{path}>"
       yield true
     rescue Exception => e
+      @logger.an_event.debug e
       @logger.an_event.error "FTPServer cannot delete file <#{path}>"
       yield false
     end
@@ -110,8 +110,7 @@ class FTPDriver
     rescue Exception => e
       STDERR << "loading parameters file #{PARAMETERS} failed : #{e.message}"
     end
-    @logger = Logging::Log.new(self, :staging => @envir, :debugging => @debugging)
-    Logging::show_configuration
+    @logger = Logging::Log.new(Object.new, :staging => @envir, :id_file => File.basename(__FILE__, ".rb"), :debugging => @debugging)
     @logger.an_event.info "parameters of ftp server :"
     @logger.an_event.info "authentification server port : #{@authentification_server_port}"
     @logger.an_event.info "debugging : #{@debugging}"

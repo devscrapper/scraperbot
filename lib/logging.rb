@@ -50,12 +50,12 @@ module Logging
     def initialize(obj, opts = {})
       if Logging::initialized?
         @logger = Logging::Logger[obj]
+        #Logging::show_configuration
       else
         @staging = opts.getopt(:staging, STAGING_PROD)
         @debugging = opts.getopt(:debugging, false)
         @class_name = obj.class.name.gsub("::", "_")
         @main = @class_name == Object.name
-
         param_1(opts) if @debugging and [STAGING_TEST, STAGING_PROD].include?(@staging) and @main
         param_4(opts) if !@debugging and [STAGING_TEST, STAGING_PROD].include?(@staging) and @main
 
@@ -64,9 +64,11 @@ module Logging
 
         param_3(opts) if @debugging and [STAGING_DEV].include?(@staging) and @main
         param_6(opts) if !@debugging and [STAGING_DEV].include?(@staging) and @main
+        Logging::show_configuration
       end
       @logger.debug "logging is available"
     end
+
 
     def ndc(args)
       args.each { |arg| Logging.ndc.push arg }
@@ -98,8 +100,9 @@ module Logging
     end
 
     def rollfile()
-      return Logging::Appenders.rolling_file(File.join(DIR_LOG, "#{@id_file}.log"), {:age => :daily, :keep => 7, :roll_by => :date}) unless  @debugging
-      Logging::Appenders.rolling_file(File.join(DIR_LOG, "#{@id_file}.log"), {:truncate => true, :size => 5000000, :keep => 10, :roll_by => :number})   if @debugging
+      opt = {:truncate => true, :size => 5000000, :keep => 10, :roll_by => :number} if @debugging
+      opt = {:age => :daily, :keep => 7, :roll_by => :date} unless  @debugging
+      Logging::Appenders.rolling_file(File.join(DIR_LOG, "#{@id_file}.log"), opt)
     end
 
 

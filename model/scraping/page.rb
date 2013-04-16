@@ -61,7 +61,7 @@ module Scraping
     end
 
     def is_leaf?()
-      @links.nil?
+      @links.nil? or @links.empty?
     end
 
     def title

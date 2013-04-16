@@ -66,18 +66,18 @@ module Scraping
       @types = types
       @website_id = website_id
       $sem = Mutex.new
-
+      w = self
       @start_spawn = EM.spawn {
-        Scraping_website.start()
+        w.start()
       }
       @stop_spawn = EM.spawn {
-        Scraping_website.stop()
+        w.stop()
       }
       @run_spawn = EM.spawn { |urls|
-        Scraping_website.run(urls)
+        w.run(urls)
       }
       @push_file_spawn = EM.spawn { |id_file, last_volume|
-        Scraping_website.push_file(id_file, last_volume)
+        w.push_file(id_file, last_volume)
       }
 
       @known_url = Hash.new(0)
@@ -179,10 +179,11 @@ module Scraping
       @logger.an_event.info("Scraping pages for #{@label} is over")
       @f.close
       @ferror.close
+      @fleaves.close if @fleaves.exist?
       # si il n'existe pas de feuille le fichier n'est pas créé, il faut donc le créé vide (size=0) pour que le
       # traitement de building matrix & page puisse se réaliser
       @fleaves.empty unless @fleaves.exist?
-      @fleaves.close
+
       # informer input flow server qu'il peut telecharger le dernier volume
       @push_file_spawn.notify @fleaves, false
       # informer input flow server qu'il peut telecharger le dernier volume
@@ -194,10 +195,28 @@ module Scraping
         Information.new({"date" => Date.today}).send_to($statupweb_server_ip, $statupweb_server_port, options)
         @logger.an_event.info("Updating scraping date for Website <#{@label}>")
       rescue Exception => e
-        @logger.an_event.alert("Updating scraping date for Website <#{@label}> failed : #{e.message}")
+        @logger.an_event.debug e
+        @logger.an_event.warn("cannot update scraping date for Website <#{@label}>")
       end
     end
 
+
+
+
+    def push_file(id_file, last_volume = false)
+      begin
+        id_file.push($authentification_server_port,
+                     $input_flows_server_ip,
+                     $input_flows_server_port,
+                     $ftp_server_port,
+                     id_file.vol, # on pousse que ce volume
+                     last_volume)
+        @logger.an_event.info("push flow <#{id_file.basename}> to input flows server (#{$input_flows_server_ip}:#{$input_flows_server_port})")
+      rescue Exception => e
+        @logger.an_event.debug e
+        @logger.an_event.error("cannot push flow <#{id_file.basename}> to input flows server (#{$input_flows_server_ip}:#{$input_flows_server_port})")
+      end
+    end
 
     private
 
@@ -208,11 +227,11 @@ module Scraping
       dd, hh = hh.divmod(24) #=> [3, 3]
       @logger.an_event.info("#{@label} nb page = #{@nbpage}  from start = #{dd} days, #{hh} hours, #{mm} minutes and #{ss.round(0)} seconds  avancement = #{((@nbpage * 100)/(@nbpage + urls.size)).to_i}%  nb/s = #{(@nbpage/delay_from_start).round(2)}  raf #{urls.size} links")
     end
-
-
-    private
     def output(page)
-      @fleaves.write("#{page.id}#{EOFLINE}") if page.is_leaf?
+      # on conserve l'identification des feuilles car cela ne coute pas cher et donne des informations sur la topologie du site
+      # mais ces feuilles ne sont pas utilisées dans le calcul de la matrix fait par engine bot car risque de perdre trop de page si la topologie
+      # du site est un arbre sans cycle.
+     @fleaves.write("#{page.id}#{EOFLINE}") if page.is_leaf?
       @f.write(page.to_s + "#{EOFLINE}")
       if  @f.size > Flow::MAX_SIZE
         # informer input flow server qu'il peut telecharger le fichier
@@ -222,21 +241,6 @@ module Scraping
       end
     end
 
-    def push_file(id_file, last_volume = false)
-      begin
-        id_file.push($authentification_server_port,
-                     $input_flows_server_ip,
-                     $input_flows_server_port,
-                     $ftp_server_port,
-                     id_file.vol, # on pousse que ce volume
-                     last_volume)
-      rescue Exception => e
-        @logger.an_event.alert("push flow <#{id_file}> to inputflows_server (#{$input_flows_server_ip}:#{$input_flows_server_port}) failed")
-      end
-    end
 
-# public
-
-# private
   end
 end

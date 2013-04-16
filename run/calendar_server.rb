@@ -39,7 +39,7 @@ end
 
 logger = Logging::Log.new(self, :staging => $staging, :id_file => File.basename(__FILE__, ".rb"), :debugging => $debugging)
 
-Logging::show_configuration
+
 logger.a_log.info "parameters of calendar server :"
 logger.a_log.info "listening port : #{listening_port}"
 logger.a_log.info "scraper server port : #{scrape_server_port}"
