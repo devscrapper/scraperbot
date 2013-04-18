@@ -76,17 +76,24 @@ module Logging
 
 
     def email()
-      #TODO definir le parametrage de l'appender mail
+      #TODO valider le parametrage de l'appender mail
+
+#      port 25 : sans authentificationnote 2, connexion non sécurisée
+#      port 465 : authentification permettant l'envoi d'e-mails depuis n'importe quel point d'accès, connexion sécurisée
+#      port 587 : authentification permettant l'envoi d'e-mails depuis n'importe quel point d'accès, connexion non sécurisée
+#      Si une méthode de sécurité vous est proposée, choisissez SSL / TLS port 465 (ou MD5 port 587).
+#      L'authentification SMTP est strictement inutile si la connexion utilisée lors de l'envoi d'eMails appartient au réseau Free.
+#      Cette option est clairement destinée à l'envoi d'eMails depuis une connexion appartenant à un opérateur différent.
       Logging::appenders.email('email',
-                               :from => "server@example.com",
-                               :to => "developers@example.com",
+                               :from => "error@log.com",
+                               :to => "devscrapper@yahoo.fr",
                                :subject => "Application Error []",
-                               :address => "smtp.google.com",
-                               :port => 443,
+                               :address => "smtp.free.fr",
+                               :port => 587,
                                :domain => "google.com",
-                               :user_name => "example",
-                               :password => "12345",
-                               :authentication => :plain,
+                               :user_name => "ericgelin",
+                               :password => "brembo",
+                               :authentication => :cram_md5,
                                :enable_starttls_auto => true,
                                :auto_flushing => 200, # send an email after 200 messages have been buffered
                                :flush_period => 60, # send an email after one minute
@@ -95,7 +102,6 @@ module Logging
     end
 
     def syslog()
-      #TODO terminer l'appender syslog
       Logging::Appenders.syslog(@class_name)
     end
 

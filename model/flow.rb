@@ -21,6 +21,28 @@ class Flow
   #----------------------------------------------------------------------------------------------------------------
   # class methods
   #----------------------------------------------------------------------------------------------------------------
+
+  #----------------------------------------------------------------------------------------------------------------
+  # self.list(dir, opts)
+  #----------------------------------------------------------------------------------------------------------------
+  # fournit la liste des flow présent dans le <dir> et qui satisfont les options
+  #----------------------------------------------------------------------------------------------------------------
+  # input :
+  # un répertoire, ne doit pas être nil
+  # :typeflow : un type de flow : si est absent alors n'intervient pas dans la recherche
+  # :label : un label : si est absent alors n'intervient pas dans la recherche
+  # :date : une date : si est absent alors n'intervient pas dans la recherche
+  # :ext : une extension de fichier : si est absent alors n'intervient pas dans la recherche
+  #----------------------------------------------------------------------------------------------------------------
+  def self.list(dir, opts={})
+    dir += "/" unless dir.end_with?("/")
+    type_flow = opts.getopt(:type_flow, "*")
+    label = opts.getopt(:label, "*")
+    date = opts.getopt(:date, "*")
+    date = date.strftime("%Y-%m-%d") if date.is_a?(Date)
+    ext = opts.getopt(:ext, ".*")
+    Dir.glob("#{dir}#{type_flow}#{SEPARATOR}#{label}#{SEPARATOR}#{date}*#{ext}").map{|file| Flow.from_absolute_path(file)}
+  end
   #----------------------------------------------------------------------------------------------------------------
   # self.from_basename(dir, basename)
   #----------------------------------------------------------------------------------------------------------------
@@ -95,7 +117,14 @@ class Flow
     raise FlowException, "Flow not initialize" unless @dir && @type_flow && @label && @date && @ext
   end
 
-
+  def == (flow)
+    #les volumes et leur nombre ne sont pas pris en compte, car c'est une egalité fonctionnelle et pas technique
+    @dir == flow.dir &&
+        @type_flow == flow.type_flow &&
+        @label == flow.label &&
+        @date == flow.date &&
+        @ext == flow.ext
+  end
   def absolute_path
     File.join(@dir, basename)
   end
@@ -113,14 +142,21 @@ class Flow
     @logger.an_event.debug "archiving <#{basename}> to #{ARCHIVE}"   if $debugging
   end
 
+
   def archive_previous
-    #TODO développer archive_previous
+    #TODO valider archive_previous
     # N'ARCHIVE PAS L'INSTANCE COURANTE
     # archive le flow ou les flows qui sont antérieurs à l'instance courante
+    # en prenant en compte le multivolume
     # l'objectif est de faire le ménage dans le répertoire qui contient l'instance courante
     # le ou les flow sont déplacés dans ARCHIVE
+    raise FlowException, "Flow <#{absolute_path}> not exist" unless exist?
+    Flow.list(@dir, {:type_flow => @type_flow, :label => @label,  :ext=> @ext}).each{|flow|
+      p flow
+      flow.archive unless flow == self
+    }
     @logger.an_event.info "archive previous <#{basename}>"
-    @logger.an_event.debug "archive previous <#{basename}> to #{ARCHIVE}"  if $debugging
+    @logger.an_event.debug "archive previous <#{basename}> to #{ARCHIVE}" if $debugging
   end
 
   def basename

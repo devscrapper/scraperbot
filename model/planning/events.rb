@@ -16,7 +16,6 @@ module Planning
       @events = Array.new
       begin
         JSON.parse(File.read(EVENTS_FILE)).each { |evt|
-          #TODO VALIDER que les events qui sont passés dans le referentiel des evenements sont supprimé
           @events << Event.new(evt["key"], evt["cmd"], evt["periodicity"], evt["business"]) unless IceCube::Schedule.from_yaml(evt["periodicity"]).next_occurrence.nil?
         }
         @logger.an_event.info "repository events <#{EVENTS_FILE}> is loaded"

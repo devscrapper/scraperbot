@@ -3,6 +3,9 @@ module Tasking
   ENVIRONMENT= File.dirname(__FILE__) + "/../../parameter/environment.yml"
 
   class Task
+    class TaskException < StandardError
+      end
+
     attr :tasks_server_port,
          :cmd,
          :data,
@@ -22,7 +25,6 @@ module Tasking
 
       begin
         params = YAML::load(File.open(PARAMETERS), "r:UTF-8")
-        p environment
         @tasks_server_port = params[staging]["tasks_server_port"] unless params[staging]["tasks_server_port"].nil?
       rescue Exception => e
         STDERR << "loading parameters file #{PARAMETERS} failed : #{e.message}"
@@ -40,7 +42,7 @@ module Tasking
       rescue Exception => e
         @logger.an_event.error "cannot ask execution task <#{@cmd}> to tasks server"
         @logger.an_event.debug e
-        raise EventException, "cannot ask execution task <#{@cmd}> to tasks server because #{e}"
+        raise TaskException, "cannot ask execution task <#{@cmd}> to tasks server because #{e}"
       end
     end
   end

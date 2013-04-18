@@ -47,6 +47,7 @@ module Planning
           "cmd" => @cmd,
       }.to_s(*a)
     end
+
     #
     #def execute(load_server_port)
     #  begin
@@ -63,14 +64,14 @@ module Planning
     #end
     def execute(toto)
       begin
-      data = {
-          "label" => @business["label"],
-          "date_building" => @key["building_date"] || Date.today,
-          "data" => @business}
-     Task.new(@cmd, data).execute
+        data = {
+            "label" => @business["label"],
+            "date_building" => @key["building_date"] || Date.today,
+            "data" => @business}
+        Task.new(@cmd, data).execute
       rescue Exception => e
         raise EventException, "cannot execute event <#{@cmd}> for <#{@business["label"]}> because #{e}"
-        end
+      end
     end
   end
 
