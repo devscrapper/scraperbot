@@ -3,8 +3,8 @@ set :branch, "master" # version à déployer
 set :application, "scraperbot" # nom application (github)
 set :keep_releases, 3 # nombre de version conservées
 set :server_name, "192.168.1.53" # adresse du server de destination
-#set :repository, "https://github.com/devscrapper/#{application}.git" # adresse du referentiel de la l'application sous github
-set :repository, "d:///referentiel/dev/#{application}/.git"
+set :repository, "https://github.com/devscrapper/#{application}.git" # adresse du referentiel de la l'application sous github
+#set :repository, "d:///referentiel/dev/#{application}/.git"
 set :deploy_to, "/home/eric/www/#{application}" # repertoire de deploiement de l'application
 set :scm, "git"
 set :deploy_via, :copy
