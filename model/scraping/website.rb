@@ -20,7 +20,7 @@ module Scraping
 #------------------------------------------------------------------------------------------
 # Globals variables
 #------------------------------------------------------------------------------------------
-    OUTPUT = File.dirname(__FILE__) + "/../../output/"
+    OUTPUT = File.dirname(__FILE__) + "/../../output"
     EOFLINE ="\n"
     SEPARATOR="%SEP%"
 # Input

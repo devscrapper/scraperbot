@@ -8,7 +8,7 @@ class Flow
 
   MAX_SIZE = 1000000 # taille max d'un volume
   SEPARATOR = "_" # separateur entre elemet composant (type_flow, label, date, vol) le nom du volume (basename)
-  ARCHIVE = File.dirname(__FILE__) + "/../archive/" #localisation du repertoire d'archive
+  ARCHIVE = File.dirname(__FILE__) + "/../archive" #localisation du repertoire d'archive
   FORBIDDEN_CHAR = /[_ ]/ # liste des caractères interdits dans le typeflow et label d'un volume
   attr :descriptor,
        :dir,
@@ -35,13 +35,12 @@ class Flow
   # :ext : une extension de fichier : si est absent alors n'intervient pas dans la recherche
   #----------------------------------------------------------------------------------------------------------------
   def self.list(dir, opts={})
-    dir += "/" unless dir.end_with?("/")
     type_flow = opts.getopt(:type_flow, "*")
     label = opts.getopt(:label, "*")
     date = opts.getopt(:date, "*")
     date = date.strftime("%Y-%m-%d") if date.is_a?(Date)
     ext = opts.getopt(:ext, ".*")
-    Dir.glob("#{dir}#{type_flow}#{SEPARATOR}#{label}#{SEPARATOR}#{date}*#{ext}").map { |file| Flow.from_absolute_path(file) }
+    Dir.glob(File.join(dir,"#{type_flow}#{SEPARATOR}#{label}#{SEPARATOR}#{date}*#{ext}")).map { |file| Flow.from_absolute_path(file) }
   end
 
   #----------------------------------------------------------------------------------------------------------------
@@ -144,7 +143,6 @@ class Flow
     @logger.an_event.debug "archiving <#{basename}> to #{ARCHIVE}" if $debugging
   end
 
-
   def archive_previous
     #TODO valider archive_previous
     # N'ARCHIVE PAS L'INSTANCE COURANTE
@@ -154,11 +152,9 @@ class Flow
     # le ou les flow sont déplacés dans ARCHIVE
     raise FlowException, "Flow <#{absolute_path}> not exist" unless exist?
     Flow.list(@dir, {:type_flow => @type_flow, :label => @label, :ext => @ext}).each { |flow|
-      p flow
-      flow.archive unless flow == self
+        flow.archive unless self == flow
     }
     @logger.an_event.info "archive previous <#{basename}>"
-    @logger.an_event.debug "archive previous <#{basename}> to #{ARCHIVE}" if $debugging
   end
 
   def basename
@@ -243,7 +239,7 @@ class Flow
     volum = "" if @vol.empty?
     max_time = Time.new(2001, 01, 01)
     chosen_file = nil
-    Dir.glob("#{@dir}#{@type_flow}#{SEPARATOR}#{@label}#{SEPARATOR}*#{volum}#{@ext}").each { |file|
+    Dir.glob(File.join(@dir,"#{@type_flow}#{SEPARATOR}#{@label}#{SEPARATOR}*#{volum}#{@ext}")).each { |file|
       if File.ctime(file) > max_time
         max_time = File.ctime(file)
         chosen_file = file
@@ -500,5 +496,3 @@ class Flow
     @descriptor.sync = true
   end
 end
-
-

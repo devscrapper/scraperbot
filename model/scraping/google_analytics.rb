@@ -24,8 +24,8 @@ module Scraping
 # Globals variables
 #------------------------------------------------------------------------------------------
 
-    TEST = File.dirname(__FILE__) + "/../../test/"
-    OUTPUT = File.dirname(__FILE__) + "/../../output/"
+    TEST = File.dirname(__FILE__) + "/../../test"
+    OUTPUT = File.dirname(__FILE__) + "/../../output"
 
     SEPARATOR="%SEP%"
     EOFLINE="%EOFL%"
