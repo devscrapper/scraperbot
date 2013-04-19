@@ -27,7 +27,7 @@ module Scraping
     attr :host # le hostname du site
 # Output
     attr :f, #fichier contenant les links
-         :ferror # fichier contenant les links en erreur
+         :ferror, # fichier contenant les links en erreur
     :fleaves #fichier contenant les id des links ne contenant pas de lien
 # Private
     attr :start_time, # heure de d�part
@@ -118,7 +118,7 @@ module Scraping
       @logger.an_event.debug("schemes : #{@schemes}")
       @logger.an_event.debug("types : #{@types}")
       @run_spawn.notify urls
-      @logger.an_event.info ("scrapping of #{@label} is running ")
+      @logger.an_event.info("scrapping of #{@label} is running ")
     end
 
     def run(urls)
@@ -244,3 +244,4 @@ module Scraping
 
   end
 end
+

@@ -3,7 +3,8 @@ set :branch, "master" # version à déployer
 set :application, "scraperbot" # nom application (github)
 set :keep_releases, 3 # nombre de version conservées
 set :server_name, "192.168.1.53" # adresse du server de destination
-set :repository, "https://github.com/devscrapper/#{application}.git" # adresse du referentiel de la l'application sous github
+#set :repository, "https://github.com/devscrapper/#{application}.git" # adresse du referentiel de la l'application sous github
+set :repository, "d:///referentiel/dev/#{application}/.git"
 set :deploy_to, "/home/eric/www/#{application}" # repertoire de deploiement de l'application
 set :scm, "git"
 set :deploy_via, :copy
@@ -11,6 +12,7 @@ set :rvm_type, :user
 set :rvm_ruby_string, :release_path
 set :user, "eric"
 set :password, "Brembo01"
+set :copy_compression, :zip
 default_run_options[:pty] = true
 set :use_sudo, false
 set :server_list, ["authentification_scraperbot", "calendar_scraperbot", "ftpd_scraperbot" , "scraper_scraperbot"]

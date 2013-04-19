@@ -26,7 +26,6 @@ class Communication
     begin
       s = TCPSocket.new remote_ip, remote_port
       s.puts @data_go_yaml
-      local_port, local_ip = Socket.unpack_sockaddr_in(s.getsockname)
     rescue Exception => e
       raise CommunicationException, "cannot send data to <#{remote_ip}:#{remote_port}> because #{e.message}"
     end
@@ -100,4 +99,3 @@ class Question < Communication
   end
 
 end
-

@@ -67,7 +67,7 @@ module Scraping
     def title
       begin
         @title ||= @parsed_document.title() #.gsub(/\t|\n|\r/, ''), permet d'enlever ces caracteres
-      rescue Exception => e
+      rescue
         @title = ""
       end
     end
@@ -99,7 +99,7 @@ module Scraping
           # on ne conserve que les link qui r�pondent � la s�lection sur le
           abs_l if acceptable_scheme?(abs_l) and # scheme
               acceptable_link?(type, abs_l, @root_url) # le perim�tre : domaine, sous-domaine, hors du domaine
-        rescue Exception => e
+        rescue
         end
       }.compact
       # on retourne un nombre limite si besoin
@@ -174,7 +174,7 @@ module Scraping
         @parsed_document.search("//a").map { |link|
           link.attributes["href"].to_s.strip
         }.uniq
-      rescue Exception => e
+      rescue
         []
       end
     end
@@ -197,7 +197,7 @@ module Scraping
     def count_word()
       begin
         @body_not_html.scan(Regexp.new(/[[:word:]]+/)).size
-      rescue Exception => e
+      rescue
         # mesure d�grad�e, tant pis ....
         @body_not_html.size
       end

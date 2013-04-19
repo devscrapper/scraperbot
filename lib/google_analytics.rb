@@ -145,3 +145,13 @@ end
     a <= b ? a : b
   end
 end
+   #TODO /home/eric/www/scraperbot/releases/20130417163231/lib/google_analytics.rb:43: warning: (...) interpreted as grouped expression
+   #TODO /home/eric/www/scraperbot/releases/20130417163231/lib/google_analytics.rb:51: warning: (...) interpreted as grouped expression
+   #TODO /home/eric/www/scraperbot/releases/20130417163231/lib/google_analytics.rb:65: warning: (...) interpreted as grouped expression
+   #TODO /home/eric/www/scraperbot/releases/20130417163231/lib/google_analytics.rb:70: warning: mismatched indentations at 'end' with 'begin' at 57
+   #TODO /home/eric/www/scraperbot/releases/20130417163231/lib/google_analytics.rb:71: warning: mismatched indentations at 'end' with 'def' at 19
+#TODO /home/eric/www/scraperbot/releases/20130417163231/lib/google_analytics.rb:43: warning: (...) interpreted as grouped expression
+#TODO /home/eric/www/scraperbot/releases/20130417163231/lib/google_analytics.rb:51: warning: (...) interpreted as grouped expression
+#TODO /home/eric/www/scraperbot/releases/20130417163231/lib/google_analytics.rb:65: warning: (...) interpreted as grouped expression
+#TODO /home/eric/www/scraperbot/releases/20130417163231/lib/google_analytics.rb:70: warning: mismatched indentations at 'end' with 'begin' at 57
+#TODO /home/eric/www/scraperbot/releases/20130417163231/lib/google_analytics.rb:71: warning: mismatched indentations at 'end' with 'def' at 19
